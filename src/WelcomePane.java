@@ -23,7 +23,7 @@ public class WelcomePane extends GraphicsPane{
 	}
 	
 	private void addPicture(){
-		GImage startImage = new GImage("start.png", 200, 100);
+		GImage startImage = new GImage("Main Menu.png", 200, 200);
 		startImage.scale(0.5, 0.5);
 		startImage.setLocation((mainScreen.getWidth() - startImage.getWidth())/ 2, 70);
 		
@@ -32,13 +32,14 @@ public class WelcomePane extends GraphicsPane{
 	}
 	
 	private void addDescriptionButton() {
+		// need to find a "play button"
 		GImage moreButton = new GImage("more.jpeg", 200, 400);
 		moreButton.scale(0.3, 0.3);
-		moreButton.setLocation((mainScreen.getWidth() - moreButton.getWidth())/ 2, 400);
+		moreButton.setLocation((mainScreen.getWidth() - moreButton.getWidth())/ 2, 300);
 		
 		contents.add(moreButton);
 		mainScreen.add(moreButton);
-
+		
 	}
 	
 	@Override

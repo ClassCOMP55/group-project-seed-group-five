@@ -33,7 +33,7 @@ public class DescriptionPane extends GraphicsPane{
 	}
 	
 	private void addBackButton() {
-		GImage backButton = new GImage("back.jpg", 200, 400);
+		GImage backButton = new GImage("returnButton.png", 200, 400);
 		backButton.scale(0.3, 0.3);
 		backButton.setLocation((mainScreen.getWidth() - backButton.getWidth())/ 2, 400);
 		
