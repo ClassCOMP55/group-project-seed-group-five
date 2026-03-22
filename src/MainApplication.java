@@ -14,6 +14,7 @@ public class MainApplication extends GraphicsProgram{
 	private WelcomePane welcomePane;
 	private DescriptionPane descriptionPane;
 	private GraphicsPane currentScreen;
+	private Gameplay gameScreen;
 
 
 	public MainApplication() {
@@ -55,6 +56,9 @@ public class MainApplication extends GraphicsProgram{
 		switchToScreen(welcomePane);
 	}
 	
+	public void switchToGame() {
+		switchToScreen(gameScreen);
+	}
 	
 	protected void switchToScreen(GraphicsPane newScreen) {
 		if(currentScreen != null) {

@@ -1,7 +1,8 @@
 import java.awt.Color;
 import java.awt.event.MouseEvent;
-
 import acm.graphics.*;
+
+
 
 public class DescriptionPane extends GraphicsPane{
 	public DescriptionPane(MainApplication mainScreen) {
@@ -10,7 +11,7 @@ public class DescriptionPane extends GraphicsPane{
 	
 	@Override
 	public void showContent() {
-		addText();
+		addRectangle();
 		addBackButton();
 	}
 
@@ -22,19 +23,18 @@ public class DescriptionPane extends GraphicsPane{
 		contents.clear();
 	}
 	
-	private void addText() {
-		GLabel text = new GLabel("This is an example of a new screen with some description!", 100, 70);
-		text.setColor(Color.BLUE);
-		text.setFont("DialogInput-PLAIN-24");
-		text.setLocation((mainScreen.getWidth() - text.getWidth()) / 2, 70);
-		
-		contents.add(text);
-		mainScreen.add(text);
+	private void addRectangle() {
+		GRect box = new GRect(250, 50, 310, 450);
+		box.setFilled(true);
+		box.setFillColor(new Color(242, 235, 226));
+		box.setColor(Color.WHITE);
+		contents.add(box);
+		mainScreen.add(box);
 	}
 	
 	private void addBackButton() {
-		GImage backButton = new GImage("returnButton.png", 200, 400);
-		backButton.scale(0.3, 0.3);
+		GImage backButton = new GImage("back.png", 200, 400);
+		backButton.scale(1, 1);
 		backButton.setLocation((mainScreen.getWidth() - backButton.getWidth())/ 2, 400);
 		
 		contents.add(backButton);

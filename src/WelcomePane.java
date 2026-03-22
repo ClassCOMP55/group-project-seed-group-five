@@ -12,6 +12,7 @@ public class WelcomePane extends GraphicsPane{
 	public void showContent() {
 		addPicture();
 		addDescriptionButton();
+		addPlayButton();
 	}
 
 	@Override
@@ -31,10 +32,19 @@ public class WelcomePane extends GraphicsPane{
 		mainScreen.add(startImage);
 	}
 	
+	private void addPlayButton() {
+		GImage playButton = new GImage("play.png", 200, 400);
+		playButton.scale(0.7, 0.7);
+		playButton.setLocation((mainScreen.getWidth() - playButton.getWidth())/ 2, 225);
+		
+		contents.add(playButton);
+		mainScreen.add(playButton);
+		
+	}
+	
 	private void addDescriptionButton() {
-		// need to find a "play button"
-		GImage moreButton = new GImage("more.jpeg", 200, 400);
-		moreButton.scale(0.3, 0.3);
+		GImage moreButton = new GImage("settings.png", 200, 400);
+		moreButton.scale(0.7, 0.7);
 		moreButton.setLocation((mainScreen.getWidth() - moreButton.getWidth())/ 2, 300);
 		
 		contents.add(moreButton);
