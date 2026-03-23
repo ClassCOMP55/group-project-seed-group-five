@@ -36,7 +36,7 @@ import acm.graphics.*;
  *      board.tryPlaceOrMerge(ChessPiece, double pixelX, double pixelY)
  *    and return true on success. Wire it up in the handleDrop() method below.
  */
-public class ShopPane extends GraphicsPane {
+public class Shoppanel extends GraphicsPane {
 
     // -----------------------------------------------------------------------
     // Layout constants
@@ -88,7 +88,7 @@ public class ShopPane extends GraphicsPane {
     // -----------------------------------------------------------------------
     // Constructor
     // -----------------------------------------------------------------------
-    public ShopPane(MainApplication mainScreen, int startingGold) {
+    public Shoppanel(MainApplication mainScreen, int startingGold) {
         super();
         this.mainScreen = mainScreen;
         this.gold       = startingGold;

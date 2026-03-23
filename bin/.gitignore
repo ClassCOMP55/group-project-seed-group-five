@@ -1,2 +1,12 @@
 /Tile.class
 /Gameplay.class
+/Bishop.class
+/ChessPiece.class
+/Knight.class
+/Pawn.class
+/Queen.class
+/Rook.class
+/ShopPane.class
+/UnitBase.class
+/Shoppanel.class
+/GamePane.class

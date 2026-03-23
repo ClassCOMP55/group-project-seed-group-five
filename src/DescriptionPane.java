@@ -2,8 +2,7 @@ import java.awt.Color;
 import java.awt.event.MouseEvent;
 import acm.graphics.*;
 
-
-
+// this is what appears when settings is clicked at the beginning
 public class DescriptionPane extends GraphicsPane{
 	public DescriptionPane(MainApplication mainScreen) {
 		this.mainScreen = mainScreen;
