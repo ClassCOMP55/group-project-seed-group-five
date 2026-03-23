@@ -36,7 +36,7 @@ import acm.graphics.*;
  *      board.tryPlaceOrMerge(ChessPiece, double pixelX, double pixelY)
  *    and return true on success. Wire it up in the handleDrop() method below.
  */
-public class Shoppanel extends GraphicsPane {
+public class Shoppanel {
 
     // -----------------------------------------------------------------------
     // Layout constants
@@ -73,6 +73,8 @@ public class Shoppanel extends GraphicsPane {
     // -----------------------------------------------------------------------
     // Graphics objects (tracked in contents for easy removal)
     // -----------------------------------------------------------------------
+    private MainApplication mainScreen;
+    private ArrayList<GObject> contents;
     private GRect        panelBg;
     private GLabel       goldLabel;
     private GRect        refreshBg;
@@ -90,6 +92,7 @@ public class Shoppanel extends GraphicsPane {
     // -----------------------------------------------------------------------
     public Shoppanel(MainApplication mainScreen, int startingGold) {
         super();
+        this.contents = new ArrayList<GObject>();
         this.mainScreen = mainScreen;
         this.gold       = startingGold;
         this.slots      = new ChessPiece[SLOT_COUNT];
@@ -103,7 +106,6 @@ public class Shoppanel extends GraphicsPane {
     // GraphicsPane lifecycle
     // -----------------------------------------------------------------------
 
-    @Override
     public void showContent() {
         drawPanel();
         drawGoldRow();
@@ -112,7 +114,6 @@ public class Shoppanel extends GraphicsPane {
         drawHintBar();
     }
 
-    @Override
     public void hideContent() {
         for (GObject obj : contents) {
             mainScreen.remove(obj);
@@ -135,7 +136,7 @@ public class Shoppanel extends GraphicsPane {
         panelBg.setFilled(true);
         panelBg.setFillColor(new Color(0x1A1A2E));    // dark navy background
         panelBg.setColor(new Color(0x534AB7));         // purple border
-        add(panelBg);
+        mainScreen.add(panelBg);
 
         GLabel title = new GLabel("SHOP", SHOP_X + SHOP_W / 2 - 20, SHOP_Y + 22);
         title.setFont("DialogInput-BOLD-16");
@@ -363,7 +364,6 @@ public class Shoppanel extends GraphicsPane {
     // Mouse events
     // -----------------------------------------------------------------------
 
-    @Override
     public void mouseClicked(MouseEvent e) {
         double x = e.getX(), y = e.getY();
 
