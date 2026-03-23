@@ -16,7 +16,6 @@ public class MainApplication extends GraphicsProgram{
 	private GraphicsPane currentScreen;
 	private Gameplay gameScreen;
 
-
 	public MainApplication() {
 		super();
 	}
