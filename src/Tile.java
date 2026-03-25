@@ -1,4 +1,4 @@
-public class Tile {
+public class Tile extends GraphicsPane{
 	public static final int SIZE = 64; //in pixels
 	private int row, col;
 	private double pixelX, pixelY;

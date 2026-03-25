@@ -1,5 +1,5 @@
 
-public class UnitBase {
+public class UnitBase extends GraphicsPane{
     private String name;
     private int health;
     private int maxHealth;

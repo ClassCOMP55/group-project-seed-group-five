@@ -1,6 +1,6 @@
 import acm.graphics.GObject;
 import acm.program.*;
-
+import acm.util.SoundClip;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -14,6 +14,9 @@ public class MainApplication extends GraphicsProgram{
 	private WelcomePane welcomePane;
 	private DescriptionPane descriptionPane;
 	private GraphicsPane currentScreen;
+	
+	// background music
+	private SoundClip bgMusic;
 
 	public MainApplication() {
 		super();
@@ -27,6 +30,8 @@ public class MainApplication extends GraphicsProgram{
 	
 	public void init() {
 		setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+		bgMusic = new SoundClip("media/clair-de-lune.wav");
+		bgMusic.setVolume(0.5);
 	}
 	
 	public void run() {
@@ -39,6 +44,12 @@ public class MainApplication extends GraphicsProgram{
 
 		//TheDefaultPane
 		switchToScreen(welcomePane);
+		
+		//music
+		if(bgMusic != null) {
+			bgMusic.setVolume(0.8);
+			bgMusic.loop();
+		}
 	}
 	
 	public static void main(String[] args) {
@@ -65,6 +76,12 @@ public class MainApplication extends GraphicsProgram{
 	
 	public GObject getElementAtLocation(double x, double y) {
 		return getElementAt(x, y);
+	}
+	
+	public void setVolume(double val) {
+		if(bgMusic != null) {
+			bgMusic.setVolume(val);
+		}
 	}
 	
 	@Override

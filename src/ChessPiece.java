@@ -1,7 +1,7 @@
 import java.awt.Color;
 import acm.graphics.*;
 
-public abstract class ChessPiece {
+public abstract class ChessPiece extends GraphicsPane{
 
     //Piece identity
     private String name;

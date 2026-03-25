@@ -36,7 +36,7 @@ import acm.graphics.*;
  *      board.tryPlaceOrMerge(ChessPiece, double pixelX, double pixelY)
  *    and return true on success. Wire it up in the handleDrop() method below.
  */
-public class Shoppanel {
+public class Shoppanel extends GraphicsPane{
 
     // -----------------------------------------------------------------------
     // Layout constants
@@ -385,6 +385,7 @@ public class Shoppanel {
 
     @Override
     public void mousePressed(MouseEvent e) {
+    	super.mousePressed(e);
         double x = e.getX(), y = e.getY();
         int slotIdx = getSlotAt(x, y);
         if (slotIdx >= 0 && slots[slotIdx] != null) {
