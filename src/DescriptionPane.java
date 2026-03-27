@@ -5,8 +5,6 @@ import acm.graphics.*;
 // this is what appears when settings is clicked at the beginning
 public class DescriptionPane extends GraphicsPane{
 	private GImage adjustV;
-	private final double SLIDER_X = 200;
-	private final double SLIDER_WIDTH = 400;
 	
 	public DescriptionPane(MainApplication mainScreen) {
 		this.mainScreen = mainScreen;
@@ -78,13 +76,16 @@ public class DescriptionPane extends GraphicsPane{
 	@Override
 	public void mouseDragged(MouseEvent e) {
 		GObject clicked = mainScreen.getElementAtLocation(e.getX(), e.getY());
-		if(clicked == adjustV) {
-			double newX = e.getX();
-			if(newX < SLIDER_X) newX = SLIDER_X;
-			if(newX > SLIDER_X + SLIDER_WIDTH) newX = SLIDER_X + SLIDER_WIDTH;
-			double volumePercent = (newX - SLIDER_X)/SLIDER_WIDTH;
-			mainScreen.setVolume(volumePercent);
-		}
+		 if (clicked == adjustV) {
+			 double mouseX = e.getX();
+			 if (mouseX < 275) mouseX = 275;
+			 if (mouseX > 540) mouseX = 540;
+			 double rawPercent = (mouseX - 275) / 265.0;
+			 double volumePercent = 1.0 - rawPercent;
+			 if (volumePercent < 0.01) volumePercent = 0.01;
+			 mainScreen.setVolume(volumePercent);
+			 System.out.println("Volume set to: " + (int)(volumePercent * 100) + "%");
+		    }
 	}
 	
 	@Override
