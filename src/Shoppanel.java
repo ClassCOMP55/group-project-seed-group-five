@@ -4,38 +4,6 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import acm.graphics.*;
-
-/**
- * ShopPane — a GraphicsPane that renders the right-side shop panel.
- *
- * Layout
- * ──────
- *  [Gold label]  [Refresh btn]
- *  [ slot ][ slot ][ slot ][ slot ][ slot ]   ← 5 random shop slots
- *  [ drag hint bar ]
- *  [ held-piece preview ]
- *
- * Merge mechanic (Clash Royale / auto-chess style)
- * ────────────────────────────────────────────────
- *  • Player buys a piece → it is held (dragged).
- *  • Drop on an empty board tile → place it.
- *  • Drop on a board tile already occupied by the SAME piece type
- *    at the SAME tier → merge into the next tier.
- *  • The shop refreshes (randomises) each prep phase, or manually
- *    for a small gold cost.
- *
- * Integration notes
- * ─────────────────
- *  • Call showContent() / hideContent() through the normal GraphicsPane contract.
- *  • The MainApplication (or GamePane) must call:
- *      shop.setGold(int)  to award gold
- *      shop.getGold()     to read current balance
- *      shop.rollShop()    to randomise slots (call at start of each prep phase)
- *  • Drag-and-drop onto the board is handled here via mouseDragged / mouseReleased;
- *    the board pane should expose a method like
- *      board.tryPlaceOrMerge(ChessPiece, double pixelX, double pixelY)
- *    and return true on success. Wire it up in the handleDrop() method below.
- */
 public class Shoppanel extends GraphicsPane{
 
     // -----------------------------------------------------------------------
@@ -179,8 +147,9 @@ public class Shoppanel extends GraphicsPane{
 
             ChessPiece p = slots[i];
             if (p != null) {
-                GLabel lbl = p.createLabel(x + SLOT_W / 2.0 - 10, y + 30);
-                lbl.setFont("DialogInput-BOLD-18");
+                GLabel lbl = new GLabel(p.getSymbol(), x + SLOT_W / 2.0 - 10, y + 40);
+                lbl.setFont("DialogInput-BOLD-28");
+                lbl.setColor(p.getPieceColor());
                 slotLabels[i] = lbl;
                 add(lbl);
 
@@ -306,8 +275,9 @@ public class Shoppanel extends GraphicsPane{
 
         ChessPiece p = slots[i];
         if (p != null) {
-            GLabel lbl = p.createLabel(x + SLOT_W / 2.0 - 10, y + 30);
-            lbl.setFont("DialogInput-BOLD-18");
+            GLabel lbl = new GLabel(p.getSymbol(), x + SLOT_W / 2.0 - 10, y + 40);
+            lbl.setFont("DialogInput-BOLD-28");
+            lbl.setColor(p.getPieceColor());
             slotLabels[i] = lbl;
             add(lbl);
 

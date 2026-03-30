@@ -13,6 +13,7 @@ public class MainApplication extends GraphicsProgram{
 	//List of all the full screen panes
 	private WelcomePane welcomePane;
 	private DescriptionPane descriptionPane;
+	private Shoppanel shopPane;
 	private GraphicsPane currentScreen;
 	
 	// background music
@@ -41,6 +42,7 @@ public class MainApplication extends GraphicsProgram{
 		//Initialize all Panes
 		welcomePane = new WelcomePane(this);
 		descriptionPane = new DescriptionPane(this);
+		shopPane = new Shoppanel(this, 10);
 
 		//TheDefaultPane
 		switchToScreen(welcomePane);
@@ -57,6 +59,10 @@ public class MainApplication extends GraphicsProgram{
 
 	}
 	
+	public void switchToShopScreen() {
+		switchToScreen(shopPane);
+	}
+
 	public void switchToDescriptionScreen() {
 		switchToScreen(descriptionPane);
 	}
