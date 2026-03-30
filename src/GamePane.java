@@ -5,10 +5,12 @@ import acm.graphics.*;
 public class GamePane extends GraphicsPane {
 	private static final int GRID_SIZE = 8;
 	private static final int TILE_SIZE = Tile.SIZE;
-	private static final int BOARD_X = (800 - GRID_SIZE * TILE_SIZE) / 2;
-	private static final int BOARD_Y = (600 - GRID_SIZE * TILE_SIZE) / 2;
+	private static final int BOARD_X = 20;
+	private static final int BOARD_Y = (620 - GRID_SIZE * TILE_SIZE) / 2;
 
 	private Tile[][] tiles = new Tile[GRID_SIZE][GRID_SIZE];
+	private ChessPiece heldPiece;
+	private Tile heldFromTile;
 
 	public GamePane(MainApplication mainScreen) {
 		this.mainScreen = mainScreen;
@@ -47,12 +49,53 @@ public class GamePane extends GraphicsPane {
 		return null;
 	}
 
+	public boolean tryPlaceOrMerge(ChessPiece piece, double pixelX, double pixelY) {
+		Tile tile = getTileAt((int) pixelX, (int) pixelY);
+		if (tile == null) return false;
+		if (tile.isOccupied()) return false; // TODO: merge logic
+		GLabel label = piece.createLabel(tile.getPixelX() + 4, tile.getPixelY() + 50);
+		piece.placedOnTile(tile);
+		contents.add(label);
+		mainScreen.add(label);
+		return true;
+	}
+
 	@Override
-	public void mouseClicked(MouseEvent e) {
-		Tile clicked = getTileAt(e.getX(), e.getY());
-		if (clicked != null) {
-			System.out.println("Clicked tile: row=" + clicked.getRow() + ", col=" + clicked.getCol());
-			//TODO: chess piece here
+	public void mousePressed(MouseEvent e) {
+		Tile tile = getTileAt(e.getX(), e.getY());
+		if (tile != null && tile.getOccupant() != null) {
+			heldPiece = tile.getOccupant();
+			heldFromTile = tile;
+			heldPiece.removeFromTile();
 		}
 	}
+
+	@Override
+	public void mouseDragged(MouseEvent e) {
+		if (heldPiece != null && heldPiece.getLabel() != null) {
+			heldPiece.getLabel().setLocation(e.getX() - 10, e.getY() + 10);
+		}
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		if (heldPiece == null) return;
+		Tile target = getTileAt(e.getX(), e.getY());
+		if (target != null && !target.isOccupied()) {
+			GLabel label = heldPiece.getLabel();
+			heldPiece.placedOnTile(target);
+			if (label != null) label.setLocation(target.getPixelX() + 4, target.getPixelY() + 50);
+		} else {
+			// return to original tile
+			heldPiece.placedOnTile(heldFromTile);
+			if (heldPiece.getLabel() != null) {
+				heldPiece.getLabel().setLocation(heldFromTile.getPixelX() + 4, heldFromTile.getPixelY() + 50);
+			}
+		}
+		heldPiece = null;
+		heldFromTile = null;
+	}
+
+	@Override
+	public void mouseClicked(MouseEvent e) {}
 }

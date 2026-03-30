@@ -7,13 +7,13 @@ import java.awt.event.MouseEvent;
 
 public class MainApplication extends GraphicsProgram{
 	//Settings
-	public static final int WINDOW_WIDTH = 800;
-	public static final int WINDOW_HEIGHT = 600;
+	public static final int WINDOW_WIDTH = 960;
+	public static final int WINDOW_HEIGHT = 620;
 	
 	//List of all the full screen panes
 	private WelcomePane welcomePane;
 	private DescriptionPane descriptionPane;
-	private Shoppanel shopPane;
+	private GameScreen gameScreen;
 	private GraphicsPane currentScreen;
 	
 	// background music
@@ -42,7 +42,7 @@ public class MainApplication extends GraphicsProgram{
 		//Initialize all Panes
 		welcomePane = new WelcomePane(this);
 		descriptionPane = new DescriptionPane(this);
-		shopPane = new Shoppanel(this, 10);
+		gameScreen = new GameScreen(this);
 
 		//TheDefaultPane
 		switchToScreen(welcomePane);
@@ -59,8 +59,8 @@ public class MainApplication extends GraphicsProgram{
 
 	}
 	
-	public void switchToShopScreen() {
-		switchToScreen(shopPane);
+	public void switchToGameScreen() {
+		switchToScreen(gameScreen);
 	}
 
 	public void switchToDescriptionScreen() {

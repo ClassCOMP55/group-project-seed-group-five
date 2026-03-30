@@ -64,13 +64,13 @@ public abstract class ChessPiece extends GraphicsPane{
 
 
     public void placedOnTile(Tile t) {
-        if (tile != null) tile.setOccupied(false);
+        if (tile != null) tile.setOccupant(null);
         tile = t;
-        if (tile != null) tile.setOccupied(true);
+        if (tile != null) tile.setOccupant(this);
     }
 
     public void removeFromTile() {
-        if (tile != null) tile.setOccupied(false);
+        if (tile != null) tile.setOccupant(null);
         tile = null;
     }
 

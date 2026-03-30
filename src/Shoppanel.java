@@ -9,10 +9,10 @@ public class Shoppanel extends GraphicsPane{
     // -----------------------------------------------------------------------
     // Layout constants
     // -----------------------------------------------------------------------
-    private static final int SHOP_X        = 420;   // left edge of shop panel
+    private static final int SHOP_X        = 552;   // left edge of shop panel (board ends at 532)
     private static final int SHOP_Y        = 20;
-    private static final int SHOP_W        = 360;
-    private static final int SHOP_H        = 560;
+    private static final int SHOP_W        = 390;
+    private static final int SHOP_H        = 580;
 
     private static final int SLOT_COUNT    = 5;
     private static final int SLOT_W        = 60;
@@ -53,7 +53,10 @@ public class Shoppanel extends GraphicsPane{
     private GLabel       hintLabel;
     private GLabel       heldLabel;      // floating ghost label during drag
 
+    private GamePane gamePane;
     private Random rng = new Random();
+
+    public void setGamePane(GamePane gp) { gamePane = gp; }
 
     // -----------------------------------------------------------------------
     // Constructor
@@ -444,10 +447,7 @@ public class Shoppanel extends GraphicsPane{
      *  4. Otherwise → return false (piece snaps back to shop).
      */
     protected boolean handleDrop(ChessPiece piece, double pixelX, double pixelY) {
-        // TODO: replace with real board integration
-        // Example:
-        //   return mainScreen.getGamePane().tryPlaceOrMerge(piece, pixelX, pixelY);
-        System.out.println("Drop: " + piece + " at (" + pixelX + ", " + pixelY + ")");
-        return false; // stub — return false so piece goes back to shop for now
+        if (gamePane != null) return gamePane.tryPlaceOrMerge(piece, pixelX, pixelY);
+        return false;
     }
 }

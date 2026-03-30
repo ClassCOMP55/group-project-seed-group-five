@@ -58,7 +58,7 @@ public class WelcomePane extends GraphicsPane{
 		if (clicked == contents.get(1)) {
 			mainScreen.switchToDescriptionScreen();
 		} else if (clicked == contents.get(2)) {
-			mainScreen.switchToShopScreen();
+			mainScreen.switchToGameScreen();
 		}
 	}
 
