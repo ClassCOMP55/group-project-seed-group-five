@@ -4,12 +4,10 @@ import acm.util.SoundClip;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.Dimension;
+import java.awt.Toolkit;
 
 public class MainApplication extends GraphicsProgram{
-	//Settings
-	public static final int WINDOW_WIDTH = 960;
-	public static final int WINDOW_HEIGHT = 620;
-	
 	//List of all the full screen panes
 	private WelcomePane welcomePane;
 	private DescriptionPane descriptionPane;
@@ -30,7 +28,12 @@ public class MainApplication extends GraphicsProgram{
 	}
 	
 	public void init() {
-		setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+	    int screenWidth = (int) screenSize.getWidth();
+	    int screenHeight = (int) screenSize.getHeight();
+
+	    setSize(screenWidth, screenHeight);
+	    
 		bgMusic = new SoundClip("media/clair-de-lune.wav");
 		bgMusic.setVolume(0.5);
 	}

@@ -6,7 +6,7 @@ public class GamePane extends GraphicsPane {
 	private static final int GRID_SIZE = 8;
 	private static final int TILE_SIZE = Tile.SIZE;
 	private static final int BOARD_X = 20;
-	private static final int BOARD_Y = (620 - GRID_SIZE * TILE_SIZE) / 2;
+	private int BOARD_Y;
 
 	private Tile[][] tiles = new Tile[GRID_SIZE][GRID_SIZE];
 	private ChessPiece heldPiece;
@@ -24,6 +24,7 @@ public class GamePane extends GraphicsPane {
 	}
 
 	private void buildGrid() {
+		BOARD_Y = (int) (mainScreen.getHeight() - GRID_SIZE * TILE_SIZE) / 2;
 		for (int row = 0; row < GRID_SIZE; row++) {
 			for (int col = 0; col < GRID_SIZE; col++) {
 				double x = BOARD_X + col * TILE_SIZE;

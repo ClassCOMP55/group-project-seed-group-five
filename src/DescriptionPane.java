@@ -5,6 +5,7 @@ import acm.graphics.*;
 // this is what appears when settings is clicked at the beginning
 public class DescriptionPane extends GraphicsPane{
 	private GImage adjustV;
+	private GImage exit;
 	
 	public DescriptionPane(MainApplication mainScreen) {
 		this.mainScreen = mainScreen;
@@ -49,8 +50,7 @@ public class DescriptionPane extends GraphicsPane{
 		adjustV.scale(0.3, 0.3);
 		
 		// stops image from being dragged
-		adjustV.setLocation(245, 150)
-		;
+		adjustV.setLocation(245, 150);
 		contents.add(adjustV);
 		mainScreen.add(adjustV);
 	}
@@ -59,16 +59,15 @@ public class DescriptionPane extends GraphicsPane{
 		GImage backButton = new GImage("back.png", 200, 400);
 		backButton.scale(1, 1);
 		backButton.setLocation((mainScreen.getWidth() - backButton.getWidth())/ 2, 270);
-		
+		backButton.setLocation(345, 270);
 		contents.add(backButton);
 		mainScreen.add(backButton);
 	}
 	
 	private void exitButton() {
-		GImage exit = new GImage("exitButton.png", 100, 200);
+		exit = new GImage("exitButton.png", 100, 200);
 		exit.scale(0.3, 0.3);
-		exit.setLocation((mainScreen.getWidth() - exit.getWidth())/ 2, 375);
-		
+		exit.setLocation(304, 375);
 		contents.add(exit);
 		mainScreen.add(exit);
 	}
@@ -84,14 +83,19 @@ public class DescriptionPane extends GraphicsPane{
 			 double volumePercent = 1.0 - rawPercent;
 			 if (volumePercent < 0.01) volumePercent = 0.01;
 			 mainScreen.setVolume(volumePercent);
-			 System.out.println("Volume set to: " + (int)(volumePercent * 100) + "%");
 		    }
 	}
 	
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		if (mainScreen.getElementAtLocation(e.getX(), e.getY()) == contents.get(1)) {
+		GObject clicked = mainScreen.getElementAtLocation(e.getX(), e.getY());
+		if (clicked == contents.get(1)) {
 			mainScreen.switchToWelcomeScreen();
+		}
+		
+		else if(clicked == exit) {
+			System.out.println("Closing Game... Goodbye!");
+	        System.exit(0);
 		}
 	}
 
