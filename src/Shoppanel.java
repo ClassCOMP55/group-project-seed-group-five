@@ -9,8 +9,8 @@ public class Shoppanel extends GraphicsPane{
     // -----------------------------------------------------------------------
     // Layout constants
     // -----------------------------------------------------------------------
-    private static final int SHOP_X        = 552;   // left edge of shop panel (board ends at 532)
-    private static final int SHOP_Y        = 20;
+    private static final int SHOP_X        = 958;   // left edge of shop panel (board ends at 532)
+    private static final int SHOP_Y        = 30;
     private static final int SHOP_W        = 390;
     private static final int SHOP_H        = 580;
 
@@ -107,6 +107,7 @@ public class Shoppanel extends GraphicsPane{
         panelBg.setFilled(true);
         panelBg.setFillColor(new Color(0x1A1A2E));    // dark navy background
         panelBg.setColor(new Color(0x534AB7));         // purple border
+        contents.add(panelBg);
         mainScreen.add(panelBg);
 
         GLabel title = new GLabel("SHOP", SHOP_X + SHOP_W / 2 - 20, SHOP_Y + 22);

@@ -24,18 +24,16 @@ public class WelcomePane extends GraphicsPane{
 	}
 	
 	private void addPicture(){
-		GImage startImage = new GImage("Main Menu.png", 200, 200);
-		startImage.scale(0.5, 0.5);
-		startImage.setLocation((mainScreen.getWidth() - startImage.getWidth())/ 2, 70);
+		GImage startImage = new GImage("Main Menu.png", 325, 65);
+		startImage.scale(1.0, 1.0);
 		
 		contents.add(startImage);
 		mainScreen.add(startImage);
 	}
 	
 	private void addPlayButton() {
-		GImage playButton = new GImage("play.png", 200, 400);
-		playButton.scale(0.7, 0.7);
-		playButton.setLocation((mainScreen.getWidth() - playButton.getWidth())/ 2, 225);
+		GImage playButton = new GImage("play.png", 575, 390);
+		playButton.scale(2.0, 2.0);
 		
 		contents.add(playButton);
 		mainScreen.add(playButton);
@@ -43,9 +41,8 @@ public class WelcomePane extends GraphicsPane{
 	}
 	
 	private void addDescriptionButton() {
-		GImage moreButton = new GImage("settings.png", 200, 400);
-		moreButton.scale(0.7, 0.7);
-		moreButton.setLocation((mainScreen.getWidth() - moreButton.getWidth())/ 2, 300);
+		GImage moreButton = new GImage("settings.png", 575, 565);
+		moreButton.scale(2.0, 2.0);
 		
 		contents.add(moreButton);
 		mainScreen.add(moreButton);

@@ -5,18 +5,22 @@ import acm.graphics.*;
 public class GamePane extends GraphicsPane {
 	private static final int GRID_SIZE = 8;
 	private static final int TILE_SIZE = Tile.SIZE;
-	private static final int BOARD_X = 20;
+	private static final int BOARD_X = 100;
 	private int BOARD_Y;
 
 	private Tile[][] tiles = new Tile[GRID_SIZE][GRID_SIZE];
 	private ChessPiece heldPiece;
 	private Tile heldFromTile;
+	private GImage sIcon;
 
 	public GamePane(MainApplication mainScreen) {
 		this.mainScreen = mainScreen;
 	}
 
-	public void showContent() {buildGrid();}
+	public void showContent() {
+		buildGrid();
+		addSettingsIcon();
+	}
 
 	public void hideContent() {
 		for (GObject obj : contents) {mainScreen.remove(obj);}
@@ -24,7 +28,7 @@ public class GamePane extends GraphicsPane {
 	}
 
 	private void buildGrid() {
-		BOARD_Y = (int) (mainScreen.getHeight() - GRID_SIZE * TILE_SIZE) / 2;
+		BOARD_Y = ((int) (mainScreen.getHeight() - GRID_SIZE * TILE_SIZE) / 2) - 45;
 		for (int row = 0; row < GRID_SIZE; row++) {
 			for (int col = 0; col < GRID_SIZE; col++) {
 				double x = BOARD_X + col * TILE_SIZE;
@@ -59,6 +63,13 @@ public class GamePane extends GraphicsPane {
 		contents.add(label);
 		mainScreen.add(label);
 		return true;
+	}
+	
+	private void addSettingsIcon() {
+		sIcon = new GImage("settingIcon.png", 25, 783);
+		sIcon.scale(1, 1);
+		contents.add(sIcon);
+		mainScreen.add(sIcon);
 	}
 
 	@Override
@@ -98,5 +109,10 @@ public class GamePane extends GraphicsPane {
 	}
 
 	@Override
-	public void mouseClicked(MouseEvent e) {}
+	public void mouseClicked(MouseEvent e) {
+		GObject clicked = mainScreen.getElementAtLocation(e.getX(), e.getY());
+		if (clicked == sIcon) {
+			mainScreen.switchToDescriptionScreen();
+		}
+	}
 }

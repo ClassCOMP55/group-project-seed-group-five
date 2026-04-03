@@ -28,8 +28,10 @@ public class DescriptionPane extends GraphicsPane{
 	}
 	
 	private void addRectangle() {
-		GRect box = new GRect(225, 75, 350, 450);
+		GRect box = new GRect(325, 57, 750, 750);
 		box.setFilled(true);
+		
+		// beige fill color
 		box.setFillColor(new Color(242, 235, 226));
 		
 		// border color
@@ -40,34 +42,31 @@ public class DescriptionPane extends GraphicsPane{
 	}
 	
 	private void addVolumeSlider() {
-		GRect sliderTrack = new GRect(275, 170, 265, 10);
+		GRect sliderTrack = new GRect(420, 170, 265, 20);
 		sliderTrack.setFilled(true);
 		sliderTrack.setFillColor(Color.GRAY);
 		contents.add(sliderTrack);
 		mainScreen.add(sliderTrack);
 		
 		adjustV = new GImage("volumeBar.png", 245, 150);
-		adjustV.scale(0.3, 0.3);
+		adjustV.scale(0.6, 0.6);
 		
 		// stops image from being dragged
-		adjustV.setLocation(245, 150);
+		adjustV.setLocation(390, 150);
 		contents.add(adjustV);
 		mainScreen.add(adjustV);
 	}
 	
 	private void addBackButton() {
-		GImage backButton = new GImage("back.png", 200, 400);
-		backButton.scale(1, 1);
-		backButton.setLocation((mainScreen.getWidth() - backButton.getWidth())/ 2, 270);
-		backButton.setLocation(345, 270);
+		GImage backButton = new GImage("back.png", 580, 350);
+		backButton.scale(2, 2);
 		contents.add(backButton);
 		mainScreen.add(backButton);
 	}
 	
 	private void exitButton() {
-		exit = new GImage("exitButton.png", 100, 200);
-		exit.scale(0.3, 0.3);
-		exit.setLocation(304, 375);
+		exit = new GImage("exitButton.png", 487, 540);
+		exit.scale(0.65, 0.65);
 		contents.add(exit);
 		mainScreen.add(exit);
 	}
