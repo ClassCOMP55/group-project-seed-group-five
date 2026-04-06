@@ -13,6 +13,7 @@ public class MainApplication extends GraphicsProgram{
 	private DescriptionPane descriptionPane;
 	private GameScreen gameScreen;
 	private GraphicsPane currentScreen;
+	private GraphicsPane previousScreen;
 	
 	// background music
 	private SoundClip bgMusic;
@@ -67,7 +68,29 @@ public class MainApplication extends GraphicsProgram{
 	}
 
 	public void switchToDescriptionScreen() {
+		descriptionPane.setFromGame(false);
 		switchToScreen(descriptionPane);
+	}
+
+	public void switchToDescriptionFromGame() {
+		descriptionPane.setFromGame(true);
+		previousScreen = currentScreen;   // keep game drawn underneath
+		descriptionPane.showContent();
+		currentScreen = descriptionPane;
+	}
+
+	public void switchBackFromDescription() {
+		descriptionPane.hideContent();
+		descriptionPane.setFromGame(false);
+		if (previousScreen != null) {
+			// Return to game — it's still on-screen, just restore focus
+			currentScreen = previousScreen;
+			previousScreen = null;
+		} else {
+			// Came from welcome — show welcome fresh (new game state)
+			welcomePane.showContent();
+			currentScreen = welcomePane;
+		}
 	}
 	
 	public void switchToWelcomeScreen() {

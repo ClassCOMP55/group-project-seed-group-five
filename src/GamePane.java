@@ -3,6 +3,7 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import javax.swing.Timer;
 import acm.graphics.*;
 
 public class GamePane extends GraphicsPane {
@@ -20,6 +21,20 @@ public class GamePane extends GraphicsPane {
 	private King king;
 	private final Random rng = new Random();
 
+	private final List<UnitBase> enemies = new ArrayList<>();
+	private Timer gameTimer;
+	private int spawnQueue = 0;
+	private GRect playBtn;
+	private GLabel playBtnLabel;
+
+	private static final int KING_MAX_HP = 20;
+	private int kingHp = KING_MAX_HP;
+	private static final int HP_BAR_W = 220;
+	private static final int HP_BAR_H = 18;
+	private GRect hpBarBg;
+	private GRect hpBarFill;
+	private GLabel hpBarLabel;
+
 	public GamePane(MainApplication mainScreen) {
 		this.mainScreen = mainScreen;
 	}
@@ -28,11 +43,17 @@ public class GamePane extends GraphicsPane {
 		buildGrid();
 		placeKing();
 		generateEnemyPath();
+		addKingHpBar();
 		addSettingsIcon();
+		addPlayButton();
 	}
 
 	public void hideContent() {
-		for (GObject obj : contents) {mainScreen.remove(obj);}
+		if (gameTimer != null) gameTimer.stop();
+		for (UnitBase e : enemies) e.removeFrom(mainScreen);
+		enemies.clear();
+		kingHp = KING_MAX_HP;
+		for (GObject obj : contents) { mainScreen.remove(obj); }
 		contents.clear();
 	}
 
@@ -125,6 +146,100 @@ public class GamePane extends GraphicsPane {
 
 	public List<Tile> getEnemyPath() { return enemyPath; }
 
+	private void addKingHpBar() {
+		int barX = BOARD_X;
+		int barY = BOARD_Y - 32;
+
+		GLabel icon = new GLabel("\u265A KING HP", barX, barY + 14);
+		icon.setFont("DialogInput-BOLD-13");
+		icon.setColor(new Color(0xFFD700));
+		contents.add(icon);
+		mainScreen.add(icon);
+
+		hpBarBg = new GRect(barX + 90, barY, HP_BAR_W, HP_BAR_H);
+		hpBarBg.setFilled(true);
+		hpBarBg.setFillColor(new Color(60, 60, 60));
+		hpBarBg.setColor(Color.BLACK);
+		contents.add(hpBarBg);
+		mainScreen.add(hpBarBg);
+
+		hpBarFill = new GRect(barX + 90, barY, HP_BAR_W, HP_BAR_H);
+		hpBarFill.setFilled(true);
+		hpBarFill.setFillColor(new Color(50, 200, 80));
+		hpBarFill.setColor(new Color(50, 200, 80));
+		contents.add(hpBarFill);
+		mainScreen.add(hpBarFill);
+
+		hpBarLabel = new GLabel(kingHp + " / " + KING_MAX_HP, barX + 90 + HP_BAR_W + 8, barY + 14);
+		hpBarLabel.setFont("DialogInput-BOLD-12");
+		hpBarLabel.setColor(Color.WHITE);
+		contents.add(hpBarLabel);
+		mainScreen.add(hpBarLabel);
+	}
+
+	private void damageKing(int amount) {
+		kingHp = Math.max(0, kingHp - amount);
+		updateKingHpBar();
+	}
+
+	private void updateKingHpBar() {
+		if (hpBarFill == null) return;
+		double pct = (double) kingHp / KING_MAX_HP;
+		hpBarFill.setSize(HP_BAR_W * pct, HP_BAR_H);
+		Color fill = pct > 0.25 ? new Color(50, 200, 80) : new Color(200, 50, 50);
+		hpBarFill.setFillColor(fill);
+		hpBarFill.setColor(fill);
+		if (hpBarLabel != null) hpBarLabel.setLabel(kingHp + " / " + KING_MAX_HP);
+	}
+
+	private void addPlayButton() {
+		int btnX = BOARD_X + (GRID_SIZE * TILE_SIZE) / 2 - 50;
+		int btnY = BOARD_Y + GRID_SIZE * TILE_SIZE + 10;
+		playBtn = new GRect(btnX, btnY, 110, 34);
+		playBtn.setFilled(true);
+		playBtn.setFillColor(new Color(30, 120, 50));
+		playBtn.setColor(new Color(50, 200, 80));
+		contents.add(playBtn);
+		mainScreen.add(playBtn);
+		playBtnLabel = new GLabel("\u25BA  SEND WAVE", btnX + 10, btnY + 22);
+		playBtnLabel.setFont("DialogInput-BOLD-13");
+		playBtnLabel.setColor(Color.WHITE);
+		contents.add(playBtnLabel);
+		mainScreen.add(playBtnLabel);
+	}
+
+	private static final double ENEMY_SPEED    = 2.0;  // pixels per frame
+	private static final int    SPAWN_INTERVAL = 90;   // frames between each spawn (~1.5s at 16ms)
+	private int tickCount = 0;
+
+	private void startWave() {
+		if (gameTimer != null && gameTimer.isRunning()) return;
+		spawnQueue = 5;
+		tickCount  = 0;
+		gameTimer  = new Timer(16, e -> tick());
+		gameTimer.start();
+	}
+
+	private void tick() {
+		tickCount++;
+		if (spawnQueue > 0 && tickCount % SPAWN_INTERVAL == 0) {
+			UnitBase enemy = new UnitBase("Goblin", 50, 8, 1);
+			enemy.spawnAt(enemyPath.get(0), mainScreen);
+			enemies.add(enemy);
+			spawnQueue--;
+		}
+		List<UnitBase> toRemove = new ArrayList<>();
+		for (UnitBase enemy : enemies) {
+			if (enemy.step(enemyPath, ENEMY_SPEED)) {
+				enemy.removeFrom(mainScreen);
+				toRemove.add(enemy);
+				damageKing(4);
+			}
+		}
+		enemies.removeAll(toRemove);
+		if (spawnQueue == 0 && enemies.isEmpty()) gameTimer.stop();
+	}
+
 	private void addSettingsIcon() {
 		sIcon = new GImage("settingIcon.png", 25, 783);
 		sIcon.scale(1, 1);
@@ -172,7 +287,9 @@ public class GamePane extends GraphicsPane {
 	public void mouseClicked(MouseEvent e) {
 		GObject clicked = mainScreen.getElementAtLocation(e.getX(), e.getY());
 		if (clicked == sIcon) {
-			mainScreen.switchToDescriptionScreen();
+			mainScreen.switchToDescriptionFromGame();
+		} else if (clicked == playBtn || clicked == playBtnLabel) {
+			startWave();
 		}
 	}
 }

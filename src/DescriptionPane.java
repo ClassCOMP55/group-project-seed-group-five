@@ -6,17 +6,23 @@ import acm.graphics.*;
 public class DescriptionPane extends GraphicsPane{
 	private GImage adjustV;
 	private GImage exit;
-	
+	private boolean fromGame = false;
+
 	public DescriptionPane(MainApplication mainScreen) {
 		this.mainScreen = mainScreen;
 	}
-	
+
+	public void setFromGame(boolean fromGame) {
+		this.fromGame = fromGame;
+	}
+
 	@Override
 	public void showContent() {
 		addRectangle();
 		addBackButton();
 		exitButton();
 		addVolumeSlider();
+		if (fromGame) addGameWarning();
 	}
 
 	@Override
@@ -85,11 +91,19 @@ public class DescriptionPane extends GraphicsPane{
 		    }
 	}
 	
+	private void addGameWarning() {
+		GLabel warning = new GLabel("\u26A0  Returning to menu will restart your game!", 370, 310);
+		warning.setFont("DialogInput-BOLD-13");
+		warning.setColor(new Color(220, 100, 30));
+		contents.add(warning);
+		mainScreen.add(warning);
+	}
+
 	@Override
 	public void mouseClicked(MouseEvent e) {
 		GObject clicked = mainScreen.getElementAtLocation(e.getX(), e.getY());
 		if (clicked == contents.get(1)) {
-			mainScreen.switchToWelcomeScreen();
+			mainScreen.switchBackFromDescription();
 		}
 		
 		else if(clicked == exit) {
