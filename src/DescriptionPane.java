@@ -54,7 +54,7 @@ public class DescriptionPane extends GraphicsPane{
 		contents.add(sliderTrack);
 		mainScreen.add(sliderTrack);
 		
-		adjustV = new GImage("volumeBar.png", 245, 150);
+		adjustV = new GImage("Media/volumeBar.png", 245, 150);
 		adjustV.scale(0.6, 0.6);
 		
 		// stops image from being dragged
@@ -64,14 +64,14 @@ public class DescriptionPane extends GraphicsPane{
 	}
 	
 	private void addBackButton() {
-		GImage backButton = new GImage("back.png", 580, 350);
+		GImage backButton = new GImage("Media/back.png", 580, 350);
 		backButton.scale(2, 2);
 		contents.add(backButton);
 		mainScreen.add(backButton);
 	}
 	
 	private void exitButton() {
-		exit = new GImage("exitButton.png", 487, 540);
+		exit = new GImage("Media/exitButton.png", 487, 540);
 		exit.scale(0.65, 0.65);
 		contents.add(exit);
 		mainScreen.add(exit);

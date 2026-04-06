@@ -10,6 +10,7 @@ public class GameScreen extends GraphicsPane {
 		gamePane = new GamePane(mainScreen);
 		shopPane = new Shoppanel(mainScreen, 1000);
 		shopPane.setGamePane(gamePane);
+		gamePane.setShoppanel(shopPane);
 	}
 
 	@Override

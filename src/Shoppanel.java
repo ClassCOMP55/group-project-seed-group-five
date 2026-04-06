@@ -50,7 +50,9 @@ public class Shoppanel extends GraphicsPane{
     private GRect[]      slotBgs;
     private GLabel[]     slotLabels;
     private GLabel[]     slotCostLabels;
+    private GLabel[]     slotNameLabels;
     private GLabel       hintLabel;
+    private GLabel       hintLabel2;
     private GLabel       heldLabel;      // floating ghost label during drag
 
     private GamePane gamePane;
@@ -70,6 +72,7 @@ public class Shoppanel extends GraphicsPane{
         this.slotBgs    = new GRect[SLOT_COUNT];
         this.slotLabels      = new GLabel[SLOT_COUNT];
         this.slotCostLabels  = new GLabel[SLOT_COUNT];
+        this.slotNameLabels  = new GLabel[SLOT_COUNT];
         rollShop();
     }
 
@@ -94,8 +97,9 @@ public class Shoppanel extends GraphicsPane{
         goldLabel = null;
         refreshBg = null;
         refreshLabel = null;
-        hintLabel = null;
-        heldLabel = null;
+        hintLabel  = null;
+        hintLabel2 = null;
+        heldLabel  = null;
     }
 
     // -----------------------------------------------------------------------
@@ -166,6 +170,7 @@ public class Shoppanel extends GraphicsPane{
                 GLabel name = new GLabel(p.getName(), x + 4, y + SLOT_H - 24);
                 name.setFont("DialogInput-PLAIN-11");
                 name.setColor(Color.LIGHT_GRAY);
+                slotNameLabels[i] = name;
                 add(name);
             } else {
                 slotLabels[i]     = null;
@@ -180,6 +185,12 @@ public class Shoppanel extends GraphicsPane{
         hintLabel.setFont("DialogInput-PLAIN-11");
         hintLabel.setColor(Color.GRAY);
         add(hintLabel);
+
+        hintLabel2 = new GLabel("Right-click a board piece to sell · only 50% is refunded",
+                                SHOP_X + 6, SLOTS_START_Y + SLOT_H + 38);
+        hintLabel2.setFont("DialogInput-PLAIN-11");
+        hintLabel2.setColor(Color.GRAY);
+        add(hintLabel2);
     }
 
     // Convenience: add to canvas and track in contents list
@@ -271,8 +282,10 @@ public class Shoppanel extends GraphicsPane{
         // Remove old slot labels
         if (slotLabels[i] != null)     { mainScreen.remove(slotLabels[i]);     contents.remove(slotLabels[i]); }
         if (slotCostLabels[i] != null) { mainScreen.remove(slotCostLabels[i]); contents.remove(slotCostLabels[i]); }
+        if (slotNameLabels[i] != null) { mainScreen.remove(slotNameLabels[i]); contents.remove(slotNameLabels[i]); }
         slotLabels[i]     = null;
         slotCostLabels[i] = null;
+        slotNameLabels[i] = null;
 
         int x = SLOTS_START_X + i * (SLOT_W + SLOT_GAP);
         int y = SLOTS_START_Y;
@@ -290,6 +303,12 @@ public class Shoppanel extends GraphicsPane{
             cost.setColor(new Color(0xEF9F27));
             slotCostLabels[i] = cost;
             add(cost);
+
+            GLabel name = new GLabel(p.getName(), x + 4, y + SLOT_H - 24);
+            name.setFont("DialogInput-PLAIN-11");
+            name.setColor(Color.LIGHT_GRAY);
+            slotNameLabels[i] = name;
+            add(name);
         }
         if (slotBgs[i] != null) {
             slotBgs[i].setFillColor(new Color(0x2A2A4A)); // reset colour

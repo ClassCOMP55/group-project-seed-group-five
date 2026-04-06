@@ -8,9 +8,9 @@ class Pawn extends ChessPiece {
 
     @Override
     public boolean canAttack(int fromRow, int fromCol, int toRow, int toCol) {
-        int dr = toRow - fromRow;
+        int dr = fromRow - toRow; // positive = enemy is above (upward toward row 0)
         int dc = Math.abs(toCol - fromCol);
-        return dr == -1 && dc == 1; // attacks diagonally forward (enemy rows decrease)
+        return dc == 0 && dr == 1; // straight up, 1 tile range
     }
 
     @Override public Color getPieceColor() { return new Color(0x3B8BD4); } // blue

@@ -24,7 +24,7 @@ public class WelcomePane extends GraphicsPane{
 	}
 	
 	private void addPicture(){
-		GImage startImage = new GImage("Main Menu.png", 325, 65);
+		GImage startImage = new GImage("Media/Main Menu.png", 325, 65);
 		startImage.scale(1.0, 1.0);
 		
 		contents.add(startImage);
@@ -32,7 +32,7 @@ public class WelcomePane extends GraphicsPane{
 	}
 	
 	private void addPlayButton() {
-		GImage playButton = new GImage("play.png", 575, 390);
+		GImage playButton = new GImage("Media/play.png", 575, 390);
 		playButton.scale(2.0, 2.0);
 		
 		contents.add(playButton);
@@ -41,7 +41,7 @@ public class WelcomePane extends GraphicsPane{
 	}
 	
 	private void addDescriptionButton() {
-		GImage moreButton = new GImage("settings.png", 575, 565);
+		GImage moreButton = new GImage("Media/settings.png", 575, 565);
 		moreButton.scale(2.0, 2.0);
 		
 		contents.add(moreButton);

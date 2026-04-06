@@ -1,7 +1,9 @@
 import java.awt.Color;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import javax.swing.Timer;
 import acm.graphics.*;
@@ -20,6 +22,9 @@ public class GamePane extends GraphicsPane {
 	private GImage sIcon;
 	private King king;
 	private final Random rng = new Random();
+	private Shoppanel shop;
+	private final Map<ChessPiece, List<GLabel>> outlineLabels = new HashMap<>();
+	private final Map<ChessPiece, GLabel> tierLabels = new HashMap<>();
 
 	private final List<UnitBase> enemies = new ArrayList<>();
 	private Timer gameTimer;
@@ -39,6 +44,36 @@ public class GamePane extends GraphicsPane {
 		this.mainScreen = mainScreen;
 	}
 
+	public void setShoppanel(Shoppanel shop) { this.shop = shop; }
+
+	private void sellPiece(ChessPiece piece) {
+		int refund = piece.getCost() / 2;
+		GLabel label = piece.getLabel();
+		if (label != null) { mainScreen.remove(label); contents.remove(label); }
+		List<GLabel> outlines = outlineLabels.remove(piece);
+		if (outlines != null) for (GLabel o : outlines) { mainScreen.remove(o); contents.remove(o); }
+		GLabel tierLbl = tierLabels.remove(piece);
+		if (tierLbl != null) { mainScreen.remove(tierLbl); contents.remove(tierLbl); }
+		piece.removeFromTile();
+		if (shop != null) shop.awardGold(refund);
+	}
+
+	private GLabel createTierLabel(ChessPiece piece, GLabel pieceLbl) {
+		int tier = piece.getTier();
+		StringBuilder stars = new StringBuilder();
+		for (int i = 0; i < tier; i++) stars.append("\u2605");
+		GLabel lbl = new GLabel(stars.toString(), 0, 0);
+		lbl.setFont("DialogInput-BOLD-14");
+		lbl.setColor(new java.awt.Color(0xFFD700));
+		contents.add(lbl);
+		mainScreen.add(lbl);
+		// Position centered above piece (y is baseline; subtract full piece height to clear it)
+		double x = pieceLbl.getX() + (pieceLbl.getWidth() - lbl.getWidth()) / 2.0;
+		double y = pieceLbl.getY() - pieceLbl.getHeight() + lbl.getHeight() - 2;
+		lbl.setLocation(x, y);
+		return lbl;
+	}
+
 	public void showContent() {
 		buildGrid();
 		placeKing();
@@ -53,6 +88,8 @@ public class GamePane extends GraphicsPane {
 		for (UnitBase e : enemies) e.removeFrom(mainScreen);
 		enemies.clear();
 		kingHp = KING_MAX_HP;
+		attackCooldowns.clear();
+		animTicks.clear();
 		for (GObject obj : contents) { mainScreen.remove(obj); }
 		contents.clear();
 	}
@@ -85,25 +122,89 @@ public class GamePane extends GraphicsPane {
 		return null;
 	}
 
-	public boolean tryPlaceOrMerge(ChessPiece piece, double pixelX, double pixelY) {
-		Tile tile = getTileAt((int) pixelX, (int) pixelY);
-		if (tile == null) return false;
-		if (tile.isOccupied()) return false; // TODO: merge logic
-		GLabel label = piece.createLabel(tile.getPixelX() + 4, tile.getPixelY() + 50);
-		piece.placedOnTile(tile);
+	private void centerLabelOnTile(GLabel label, Tile tile) {
+		double x = tile.getPixelX() + (TILE_SIZE - label.getWidth()) / 2.0 - 2;
+		double y = tile.getPixelY() + (TILE_SIZE + label.getHeight()) / 2.0 - 0.5;
+		label.setLocation(x, y);
+	}
+
+	private GLabel makeTileLabel(ChessPiece piece, Tile tile) {
+		// 8-direction outline: add black copies at every offset first so they sit behind
+		int[] offsets = {-2, -1, 0, 1, 2};
+		List<GLabel> outlines = new ArrayList<>();
+		for (int dx : offsets) {
+			for (int dy : offsets) {
+				if (dx == 0 && dy == 0) continue;
+				GLabel o = new GLabel(piece.getSymbol(), 0, 0);
+				o.setFont("DialogInput-BOLD-40");
+				o.setColor(Color.BLACK);
+				contents.add(o);
+				mainScreen.add(o);
+				outlines.add(o);
+			}
+		}
+
+		GLabel label = piece.createLabel(0, 0);
+		label.setLabel(piece.getSymbol());
+		label.setFont("DialogInput-BOLD-40");
 		contents.add(label);
 		mainScreen.add(label);
+
+		centerLabelOnTile(label, tile);
+		repositionOutlines(outlines, label.getX(), label.getY());
+		outlineLabels.put(piece, outlines);
+		return label;
+	}
+
+	private void repositionOutlines(List<GLabel> outlines, double baseX, double baseY) {
+		int i = 0;
+		int[] offsets = {-2, -1, 0, 1, 2};
+		for (int dx : offsets) {
+			for (int dy : offsets) {
+				if (dx == 0 && dy == 0) continue;
+				outlines.get(i++).setLocation(baseX + dx, baseY + dy);
+			}
+		}
+	}
+
+	public boolean tryPlaceOrMerge(ChessPiece piece, double pixelX, double pixelY) {
+		Tile tile = getTileAt((int) pixelX, (int) pixelY);
+		if (tile == null || enemyPath.contains(tile)) return false;
+
+		if (tile.isOccupied()) {
+			ChessPiece occupant = tile.getOccupant();
+			if (!piece.canMergeWith(occupant)) return false;
+			occupant.promote();
+			// Bump font size so the player sees the upgrade
+			int newSize = 40 + (occupant.getTier() - 1) * 6;
+			GLabel lbl = occupant.getLabel();
+			if (lbl != null) {
+				lbl.setFont("DialogInput-BOLD-" + newSize);
+				List<GLabel> outlines = outlineLabels.get(occupant);
+				if (outlines != null) {
+					for (GLabel o : outlines) o.setFont("DialogInput-BOLD-" + newSize);
+					repositionOutlines(outlines, lbl.getX(), lbl.getY());
+				}
+				// Update or create tier star label
+				GLabel oldTier = tierLabels.remove(occupant);
+				if (oldTier != null) { mainScreen.remove(oldTier); contents.remove(oldTier); }
+				GLabel newTier = createTierLabel(occupant, lbl);
+				tierLabels.put(occupant, newTier);
+			}
+			return true;
+		}
+
+		makeTileLabel(piece, tile);
+		piece.placedOnTile(tile);
 		return true;
 	}
-	
+
 	private void placeKing() {
 		int col = new Random().nextInt(GRID_SIZE);
 		Tile tile = tiles[GRID_SIZE - 1][col];
 		king = new King();
-		GLabel label = king.createLabel(tile.getPixelX() + 4, tile.getPixelY() + 50);
+		makeTileLabel(king, tile);
 		king.placedOnTile(tile);
-		contents.add(label);
-		mainScreen.add(label);
 	}
 
 	private void generateEnemyPath() {
@@ -212,6 +313,12 @@ public class GamePane extends GraphicsPane {
 	private static final int    SPAWN_INTERVAL = 90;   // frames between each spawn (~1.5s at 16ms)
 	private int tickCount = 0;
 
+	private final Map<ChessPiece, Integer> attackCooldowns = new HashMap<>();
+	private final Map<ChessPiece, Integer> animTicks       = new HashMap<>();
+	private static final int    ATTACK_COOLDOWN = 90;   // ticks between attacks (~1.5s)
+	private static final int    ANIM_DURATION   = 20;   // ticks for bounce animation
+	private static final double BOUNCE_HEIGHT   = 22.0; // pixels to bounce upward
+
 	private void startWave() {
 		if (gameTimer != null && gameTimer.isRunning()) return;
 		spawnQueue = 5;
@@ -223,11 +330,13 @@ public class GamePane extends GraphicsPane {
 	private void tick() {
 		tickCount++;
 		if (spawnQueue > 0 && tickCount % SPAWN_INTERVAL == 0) {
-			UnitBase enemy = new UnitBase("Goblin", 50, 8, 1);
+			UnitBase enemy = new UnitBase("Goblin", 8, 8, 1);
 			enemy.spawnAt(enemyPath.get(0), mainScreen);
 			enemies.add(enemy);
 			spawnQueue--;
 		}
+
+		// Move enemies; collect those that reached the King
 		List<UnitBase> toRemove = new ArrayList<>();
 		for (UnitBase enemy : enemies) {
 			if (enemy.step(enemyPath, ENEMY_SPEED)) {
@@ -237,11 +346,77 @@ public class GamePane extends GraphicsPane {
 			}
 		}
 		enemies.removeAll(toRemove);
+
+		// Piece attack phase
+		for (int row = 0; row < GRID_SIZE; row++) {
+			for (int col = 0; col < GRID_SIZE; col++) {
+				ChessPiece piece = tiles[row][col].getOccupant();
+				if (piece == null || piece instanceof King) continue;
+
+				// Tick down cooldown
+				int cd = attackCooldowns.getOrDefault(piece, 0);
+				if (cd > 0) {
+					attackCooldowns.put(piece, cd - 1);
+				} else {
+					// Find first enemy in range using actual pixel position
+					for (UnitBase enemy : enemies) {
+						int eRow = (int)((enemy.getPixelY() - BOARD_Y) / TILE_SIZE);
+						int eCol = (int)((enemy.getPixelX() - BOARD_X) / TILE_SIZE);
+						if (eRow >= 0 && eRow < GRID_SIZE && eCol >= 0 && eCol < GRID_SIZE
+								&& piece.canAttack(row, col, eRow, eCol)) {
+							enemy.takeDamage(piece.getDamage());
+							attackCooldowns.put(piece, ATTACK_COOLDOWN);
+							animTicks.put(piece, ANIM_DURATION);
+							break;
+						}
+					}
+				}
+
+				// Bounce animation
+				int at = animTicks.getOrDefault(piece, 0);
+				if (at > 0) {
+					animTicks.put(piece, at - 1);
+					double progress = (double) at / ANIM_DURATION;
+					double yOffset = -Math.sin(progress * Math.PI) * BOUNCE_HEIGHT;
+					applyPieceOffset(piece, yOffset);
+				} else if (at == 0 && animTicks.containsKey(piece)) {
+					// Animation just finished — snap back to exact tile position
+					applyPieceOffset(piece, 0);
+					animTicks.remove(piece);
+				}
+			}
+		}
+
+		// Remove enemies killed by pieces
+		List<UnitBase> dead = new ArrayList<>();
+		for (UnitBase enemy : enemies) {
+			if (!enemy.isAlive()) {
+				enemy.removeFrom(mainScreen);
+				dead.add(enemy);
+			}
+		}
+		enemies.removeAll(dead);
+
 		if (spawnQueue == 0 && enemies.isEmpty()) gameTimer.stop();
 	}
 
+	private void applyPieceOffset(ChessPiece piece, double yOffset) {
+		GLabel label = piece.getLabel();
+		Tile tile = piece.getTile();
+		if (label == null || tile == null) return;
+		centerLabelOnTile(label, tile);
+		label.setLocation(label.getX(), label.getY() + yOffset);
+		List<GLabel> outlines = outlineLabels.get(piece);
+		if (outlines != null) repositionOutlines(outlines, label.getX(), label.getY());
+		GLabel tierLbl = tierLabels.get(piece);
+		if (tierLbl != null) tierLbl.setLocation(
+			label.getX() + (label.getWidth() - tierLbl.getWidth()) / 2.0,
+			label.getY() - label.getHeight() + tierLbl.getHeight() - 2
+		);
+	}
+
 	private void addSettingsIcon() {
-		sIcon = new GImage("settingIcon.png", 25, 783);
+		sIcon = new GImage("Media/settingIcon.png", 25, 783);
 		sIcon.scale(1, 1);
 		contents.add(sIcon);
 		mainScreen.add(sIcon);
@@ -250,8 +425,16 @@ public class GamePane extends GraphicsPane {
 	@Override
 	public void mousePressed(MouseEvent e) {
 		Tile tile = getTileAt(e.getX(), e.getY());
-		if (tile != null && tile.getOccupant() != null && !(tile.getOccupant() instanceof King)) {
-			heldPiece = tile.getOccupant();
+		if (tile == null || tile.getOccupant() == null) return;
+		ChessPiece piece = tile.getOccupant();
+		if (piece instanceof King) return;
+
+		if (e.getButton() == MouseEvent.BUTTON3) {
+			// Right-click: sell piece at 50% cost
+			sellPiece(piece);
+		} else {
+			// Left-click: pick up to drag
+			heldPiece = piece;
 			heldFromTile = tile;
 			heldPiece.removeFromTile();
 		}
@@ -260,7 +443,17 @@ public class GamePane extends GraphicsPane {
 	@Override
 	public void mouseDragged(MouseEvent e) {
 		if (heldPiece != null && heldPiece.getLabel() != null) {
-			heldPiece.getLabel().setLocation(e.getX() - 10, e.getY() + 10);
+			double lx = e.getX() - 10, ly = e.getY() + 10;
+			heldPiece.getLabel().setLocation(lx, ly);
+			List<GLabel> outlines = outlineLabels.get(heldPiece);
+			if (outlines != null) repositionOutlines(outlines, lx, ly);
+			GLabel tierLbl = tierLabels.get(heldPiece);
+			if (tierLbl != null) {
+				GLabel pl = heldPiece.getLabel();
+				double tx = lx + (pl.getWidth() - tierLbl.getWidth()) / 2.0;
+				double ty = ly - pl.getHeight() + tierLbl.getHeight() - 2;
+				tierLbl.setLocation(tx, ty);
+			}
 		}
 	}
 
@@ -268,15 +461,26 @@ public class GamePane extends GraphicsPane {
 	public void mouseReleased(MouseEvent e) {
 		if (heldPiece == null) return;
 		Tile target = getTileAt(e.getX(), e.getY());
-		if (target != null && !target.isOccupied()) {
+		if (target != null && !target.isOccupied() && !enemyPath.contains(target)) {
 			GLabel label = heldPiece.getLabel();
 			heldPiece.placedOnTile(target);
-			if (label != null) label.setLocation(target.getPixelX() + 4, target.getPixelY() + 50);
+			if (label != null) {
+				centerLabelOnTile(label, target);
+				List<GLabel> outlines = outlineLabels.get(heldPiece);
+				if (outlines != null) repositionOutlines(outlines, label.getX(), label.getY());
+				GLabel tierLbl = tierLabels.get(heldPiece);
+				if (tierLbl != null) tierLbl.setLocation(label.getX() + (label.getWidth() - tierLbl.getWidth()) / 2.0, label.getY() - label.getHeight() + tierLbl.getHeight() - 2);
+			}
 		} else {
 			// return to original tile
 			heldPiece.placedOnTile(heldFromTile);
-			if (heldPiece.getLabel() != null) {
-				heldPiece.getLabel().setLocation(heldFromTile.getPixelX() + 4, heldFromTile.getPixelY() + 50);
+			GLabel label = heldPiece.getLabel();
+			if (label != null) {
+				centerLabelOnTile(label, heldFromTile);
+				List<GLabel> outlines = outlineLabels.get(heldPiece);
+				if (outlines != null) repositionOutlines(outlines, label.getX(), label.getY());
+				GLabel tierLbl = tierLabels.get(heldPiece);
+				if (tierLbl != null) tierLbl.setLocation(label.getX() + (label.getWidth() - tierLbl.getWidth()) / 2.0, label.getY() - label.getHeight() + tierLbl.getHeight() - 2);
 			}
 		}
 		heldPiece = null;

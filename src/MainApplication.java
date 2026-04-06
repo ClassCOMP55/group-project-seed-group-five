@@ -35,7 +35,7 @@ public class MainApplication extends GraphicsProgram{
 
 	    setSize(screenWidth, screenHeight);
 	    
-		bgMusic = new SoundClip("media/clair-de-lune.wav");
+		bgMusic = new SoundClip("Media/clair-de-lune.wav");
 		bgMusic.setVolume(0.5);
 	}
 	
