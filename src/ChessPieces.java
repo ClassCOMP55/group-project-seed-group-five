@@ -73,3 +73,16 @@ class Queen extends ChessPiece {
     @Override public int    getMaxTier()     { return 2; }              // already powerful
     @Override public Color  getPieceColor()  { return new Color(0x7F77DD); } // purple
 }
+
+//  King  — the objective. Not purchasable. Placed randomly on the bottom row.
+class King extends ChessPiece {
+    public King() { super("King", "\u265A", 0, 0); }
+
+    @Override
+    public boolean canAttack(int fromRow, int fromCol, int toRow, int toCol) {
+        return false; // King does not attack
+    }
+
+    @Override public int   getMaxTier()    { return 1; }
+    @Override public Color getPieceColor() { return new Color(0xFFD700); } // gold
+}
