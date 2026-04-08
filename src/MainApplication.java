@@ -14,6 +14,7 @@ public class MainApplication extends GraphicsProgram{
 	private GameScreen gameScreen;
 	private GraphicsPane currentScreen;
 	private GraphicsPane previousScreen;
+	private GameOver gameOver;
 	
 	// background music
 	private SoundClip bgMusic;
@@ -47,6 +48,7 @@ public class MainApplication extends GraphicsProgram{
 		welcomePane = new WelcomePane(this);
 		descriptionPane = new DescriptionPane(this);
 		gameScreen = new GameScreen(this);
+		gameOver = new GameOver(this);
 
 		//TheDefaultPane
 		switchToScreen(welcomePane);
@@ -104,6 +106,10 @@ public class MainApplication extends GraphicsProgram{
 		}
 		newScreen.showContent();
 		currentScreen = newScreen;
+	}
+	
+	public void triggerGameOver() {
+	    switchToScreen(gameOver);
 	}
 	
 	public GObject getElementAtLocation(double x, double y) {

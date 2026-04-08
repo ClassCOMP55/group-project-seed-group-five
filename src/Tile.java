@@ -1,5 +1,5 @@
 public class Tile extends GraphicsPane{
-	public static final int SIZE = 100; //in pixels
+	public static final int SIZE = 90; //in pixels
 	private int row, col;
 	private double pixelX, pixelY;
 	private boolean occupied;

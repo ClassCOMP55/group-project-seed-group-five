@@ -279,12 +279,11 @@ public class GamePane extends GraphicsPane {
 	}
 
 	private void damageKing(int amount) {
-		kingHp = Math.max(0, kingHp - amount);
-		updateKingHpBar();
+	    kingHp = Math.max(0, kingHp - amount);
+	    updateKingHpBar();
 	}
 
 	private void updateKingHpBar() {
-		if (hpBarFill == null) return;
 		double pct = (double) kingHp / KING_MAX_HP;
 		hpBarFill.setSize(HP_BAR_W * pct, HP_BAR_H);
 		Color fill = pct > 0.25 ? new Color(50, 200, 80) : new Color(200, 50, 50);
@@ -296,7 +295,7 @@ public class GamePane extends GraphicsPane {
 	private void addPlayButton() {
 		int btnX = BOARD_X + (GRID_SIZE * TILE_SIZE) / 2 - 50;
 		int btnY = BOARD_Y + GRID_SIZE * TILE_SIZE + 10;
-		playBtn = new GRect(btnX, btnY, 110, 34);
+		playBtn = new GRect(btnX, btnY, 130, 34);
 		playBtn.setFilled(true);
 		playBtn.setFillColor(new Color(30, 120, 50));
 		playBtn.setColor(new Color(50, 200, 80));
@@ -328,76 +327,81 @@ public class GamePane extends GraphicsPane {
 	}
 
 	private void tick() {
-		tickCount++;
-		if (spawnQueue > 0 && tickCount % SPAWN_INTERVAL == 0) {
-			UnitBase enemy = new UnitBase("Goblin", 8, 8, 1);
-			enemy.spawnAt(enemyPath.get(0), mainScreen);
-			enemies.add(enemy);
-			spawnQueue--;
-		}
+	    tickCount++;
+	    if (spawnQueue > 0 && tickCount % SPAWN_INTERVAL == 0) {
+	        UnitBase enemy = new UnitBase("Goblin", 8, 8, 1);
+	        enemy.spawnAt(enemyPath.get(0), mainScreen);
+	        enemies.add(enemy);
+	        spawnQueue--;
+	    }
 
-		// Move enemies; collect those that reached the King
-		List<UnitBase> toRemove = new ArrayList<>();
-		for (UnitBase enemy : enemies) {
-			if (enemy.step(enemyPath, ENEMY_SPEED)) {
-				enemy.removeFrom(mainScreen);
-				toRemove.add(enemy);
-				damageKing(4);
-			}
-		}
-		enemies.removeAll(toRemove);
+	    // Move enemies; collect those that reached the King
+	    boolean kingDied = false; // NEW
+	    List<UnitBase> toRemove = new ArrayList<>();
+	    for (UnitBase enemy : enemies) {
+	        if (enemy.step(enemyPath, ENEMY_SPEED)) {
+	            enemy.removeFrom(mainScreen);
+	            toRemove.add(enemy);
+	            damageKing(4);
+	            if (kingHp <= 0) kingDied = true; // NEW
+	        }
+	    }
+	    enemies.removeAll(toRemove);
 
-		// Piece attack phase
-		for (int row = 0; row < GRID_SIZE; row++) {
-			for (int col = 0; col < GRID_SIZE; col++) {
-				ChessPiece piece = tiles[row][col].getOccupant();
-				if (piece == null || piece instanceof King) continue;
+	    if (kingDied) { // NEW
+	        gameTimer.stop();
+	        mainScreen.triggerGameOver();
+	        return;
+	    }
 
-				// Tick down cooldown
-				int cd = attackCooldowns.getOrDefault(piece, 0);
-				if (cd > 0) {
-					attackCooldowns.put(piece, cd - 1);
-				} else {
-					// Find first enemy in range using actual pixel position
-					for (UnitBase enemy : enemies) {
-						int eRow = (int)((enemy.getPixelY() - BOARD_Y) / TILE_SIZE);
-						int eCol = (int)((enemy.getPixelX() - BOARD_X) / TILE_SIZE);
-						if (eRow >= 0 && eRow < GRID_SIZE && eCol >= 0 && eCol < GRID_SIZE
-								&& piece.canAttack(row, col, eRow, eCol)) {
-							enemy.takeDamage(piece.getDamage());
-							attackCooldowns.put(piece, ATTACK_COOLDOWN);
-							animTicks.put(piece, ANIM_DURATION);
-							break;
-						}
-					}
-				}
+	    // Piece attack phase
+	    for (int row = 0; row < GRID_SIZE; row++) {
+	        for (int col = 0; col < GRID_SIZE; col++) {
+	            ChessPiece piece = tiles[row][col].getOccupant();
+	            if (piece == null || piece instanceof King) continue;
 
-				// Bounce animation
-				int at = animTicks.getOrDefault(piece, 0);
-				if (at > 0) {
-					animTicks.put(piece, at - 1);
-					double progress = (double) at / ANIM_DURATION;
-					double yOffset = -Math.sin(progress * Math.PI) * BOUNCE_HEIGHT;
-					applyPieceOffset(piece, yOffset);
-				} else if (at == 0 && animTicks.containsKey(piece)) {
-					// Animation just finished — snap back to exact tile position
-					applyPieceOffset(piece, 0);
-					animTicks.remove(piece);
-				}
-			}
-		}
+	            int cd = attackCooldowns.getOrDefault(piece, 0);
+	            if (cd > 0) {
+	                attackCooldowns.put(piece, cd - 1);
+	            } else {
+	                for (UnitBase enemy : enemies) {
+	                    int eRow = (int)((enemy.getPixelY() - BOARD_Y) / TILE_SIZE);
+	                    int eCol = (int)((enemy.getPixelX() - BOARD_X) / TILE_SIZE);
+	                    if (eRow >= 0 && eRow < GRID_SIZE && eCol >= 0 && eCol < GRID_SIZE
+	                            && piece.canAttack(row, col, eRow, eCol)) {
+	                        enemy.takeDamage(piece.getDamage());
+	                        attackCooldowns.put(piece, ATTACK_COOLDOWN);
+	                        animTicks.put(piece, ANIM_DURATION);
+	                        break;
+	                    }
+	                }
+	            }
+	            
+	            // Bounce animation
+	            int at = animTicks.getOrDefault(piece, 0);
+	            if (at > 0) {
+	                animTicks.put(piece, at - 1);
+	                double progress = (double) at / ANIM_DURATION;
+	                double yOffset = -Math.sin(progress * Math.PI) * BOUNCE_HEIGHT;
+	                applyPieceOffset(piece, yOffset);
+	            } else if (at == 0 && animTicks.containsKey(piece)) {
+	                applyPieceOffset(piece, 0);
+	                animTicks.remove(piece);
+	            }
+	        }
+	    }
 
-		// Remove enemies killed by pieces
-		List<UnitBase> dead = new ArrayList<>();
-		for (UnitBase enemy : enemies) {
-			if (!enemy.isAlive()) {
-				enemy.removeFrom(mainScreen);
-				dead.add(enemy);
-			}
-		}
-		enemies.removeAll(dead);
+	    // Remove enemies killed by pieces
+	    List<UnitBase> dead = new ArrayList<>();
+	    for (UnitBase enemy : enemies) {
+	        if (!enemy.isAlive()) {
+	            enemy.removeFrom(mainScreen);
+	            dead.add(enemy);
+	        }
+	    }
+	    enemies.removeAll(dead);
 
-		if (spawnQueue == 0 && enemies.isEmpty()) gameTimer.stop();
+	    if (spawnQueue == 0 && enemies.isEmpty()) gameTimer.stop();
 	}
 
 	private void applyPieceOffset(ChessPiece piece, double yOffset) {
