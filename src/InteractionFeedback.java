@@ -2,7 +2,7 @@ public class InteractionFeedback {
 
     // Highlight tile if merge is valid
     public void showMergeCue(Tile tile) {
-        // Example: change tile color
+        // Example: change tile colo, but will change this to only either add a star or change color of piece or both
         System.out.println("Valid merge target highlighted");
     }
 
