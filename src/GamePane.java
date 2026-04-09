@@ -28,9 +28,26 @@ public class GamePane extends GraphicsPane {
 
 	private final List<UnitBase> enemies = new ArrayList<>();
 	private Timer gameTimer;
-	private int spawnQueue = 0;
+	// [red, blue, green] counts per round (BTD6-inspired)
+	private static final int[][] WAVE_DATA = {
+		{20,  0,   0},   // Round 1
+		{35,  0,   0},   // Round 2
+		{25,  5,   0},   // Round 3
+		{35,  18,  0},   // Round 4
+		{5,   27,  0},   // Round 5
+		{15,  15,  4},   // Round 6
+		{20,  20,  5},   // Round 7
+		{10,  20,  14},  // Round 8
+		{0,   0,   30},  // Round 9
+		{0,   102, 0},   // Round 10
+	};
+	private final java.util.LinkedList<Integer> spawnQueue = new java.util.LinkedList<>();
 	private GRect playBtn;
 	private GLabel playBtnLabel;
+	private GLabel waveLabel;
+	private GRect  ffBtn;
+	private GLabel ffBtnLabel;
+	private boolean fastForward = false;
 
 	private static final int KING_MAX_HP = 20;
 	private int kingHp = KING_MAX_HP;
@@ -315,10 +332,30 @@ public class GamePane extends GraphicsPane {
 		playBtnLabel.setColor(Color.WHITE);
 		contents.add(playBtnLabel);
 		mainScreen.add(playBtnLabel);
+
+		waveLabel = new GLabel("Wave: 0", btnX + 145, btnY + 22);
+		waveLabel.setFont("DialogInput-BOLD-13");
+		waveLabel.setColor(new Color(0xFFD700));
+		contents.add(waveLabel);
+		mainScreen.add(waveLabel);
+
+		int ffX = btnX + 145 + 70;
+		ffBtn = new GRect(ffX, btnY, 60, 34);
+		ffBtn.setFilled(true);
+		ffBtn.setFillColor(new Color(60, 60, 140));
+		ffBtn.setColor(new Color(100, 100, 220));
+		contents.add(ffBtn);
+		mainScreen.add(ffBtn);
+		ffBtnLabel = new GLabel("\u25BA\u25BA 1x", ffX + 8, btnY + 22);
+		ffBtnLabel.setFont("DialogInput-BOLD-12");
+		ffBtnLabel.setColor(Color.WHITE);
+		contents.add(ffBtnLabel);
+		mainScreen.add(ffBtnLabel);
 	}
 
 	private static final double ENEMY_SPEED    = 2.0;  // pixels per frame
-	private static final int    SPAWN_INTERVAL = 90;   // frames between each spawn (~1.5s at 16ms)
+	private static final int    SPAWN_INTERVAL = 90;   // wave 1 interval (~1.5s at 16ms)
+	private int currentSpawnInterval = SPAWN_INTERVAL;
 	private int tickCount = 0;
 
 	private final Map<ChessPiece, Integer> attackCooldowns = new HashMap<>();
@@ -327,21 +364,43 @@ public class GamePane extends GraphicsPane {
 	private static final int    ANIM_DURATION   = 20;   // ticks for bounce animation
 	private static final double BOUNCE_HEIGHT   = 22.0; // pixels to bounce upward
 
+	private int waveNumber = 0;
+
 	private void startWave() {
 		if (gameTimer != null && gameTimer.isRunning()) return;
-		spawnQueue = 5;
-		tickCount  = 0;
-		gameTimer  = new Timer(16, e -> tick());
+		waveNumber++;
+		spawnQueue.clear();
+		tickCount = 0;
+		// Build interleaved spawn list from WAVE_DATA
+		int waveIdx = Math.min(waveNumber, WAVE_DATA.length) - 1;
+		int[] counts = WAVE_DATA[waveIdx];
+		int red = counts[0], blue = counts[1], green = counts[2];
+		int total = red + blue + green;
+		int ri = 0, bi = 0, gi = 0;
+		for (int i = 0; i < total; i++) {
+			double pos = (double) i / total;
+			if (gi < green && pos >= (double)(red + blue) / total) { spawnQueue.add(2); gi++; }
+			else if (bi < blue && pos >= (double) red / total)     { spawnQueue.add(1); bi++; }
+			else if (ri < red)                                      { spawnQueue.add(0); ri++; }
+			else if (bi < blue)                                     { spawnQueue.add(1); bi++; }
+			else                                                    { spawnQueue.add(2); gi++; }
+		}
+		currentSpawnInterval = waveNumber == 1 ? 90 : Math.max(20, 90 - (waveNumber - 1) * 10);
+		if (waveLabel != null) waveLabel.setLabel("Wave: " + waveNumber);
+		gameTimer = new Timer(16, e -> tick());
 		gameTimer.start();
 	}
 
-	private void tick() {
+private void tick() {
 	    tickCount++;
-	    if (spawnQueue > 0 && tickCount % SPAWN_INTERVAL == 0) {
-	        UnitBase enemy = new UnitBase("Goblin", 8, 8, 1);
+	    if (!spawnQueue.isEmpty() && tickCount % currentSpawnInterval == 0) {
+	        int type = spawnQueue.poll();
+	        UnitBase enemy;
+	        if      (type == 2) enemy = new UnitBase("Orc",    32, 8, 1, new java.awt.Color(50, 180, 50));
+	        else if (type == 1) enemy = new UnitBase("Troll",  16, 8, 1, new java.awt.Color(60, 120, 220));
+	        else                enemy = new UnitBase("Goblin",  8, 8, 1);
 	        enemy.spawnAt(enemyPath.get(0), mainScreen);
 	        enemies.add(enemy);
-	        spawnQueue--;
 	    }
 
 	    // Move enemies; collect those that reached the King
@@ -412,7 +471,7 @@ public class GamePane extends GraphicsPane {
 	    }
 	    enemies.removeAll(dead);
 
-	    if (spawnQueue == 0 && enemies.isEmpty()) gameTimer.stop();
+	    if (spawnQueue.isEmpty() && enemies.isEmpty()) gameTimer.stop();
 	}
 
 	private void applyPieceOffset(ChessPiece piece, double yOffset) {
@@ -509,6 +568,14 @@ public class GamePane extends GraphicsPane {
 			mainScreen.switchToDescriptionFromGame();
 		} else if (clicked == playBtn || clicked == playBtnLabel) {
 			startWave();
+		} else if (clicked == ffBtn || clicked == ffBtnLabel) {
+			fastForward = !fastForward;
+			ffBtn.setFillColor(fastForward ? new Color(140, 80, 0) : new Color(60, 60, 140));
+			ffBtn.setColor(fastForward ? new Color(255, 160, 0) : new Color(100, 100, 220));
+			ffBtnLabel.setLabel(fastForward ? "\u25BA\u25BA 2x" : "\u25BA\u25BA 1x");
+			if (gameTimer != null && gameTimer.isRunning()) {
+				gameTimer.setDelay(fastForward ? 8 : 16);
+			}
 		}
 	}
 }

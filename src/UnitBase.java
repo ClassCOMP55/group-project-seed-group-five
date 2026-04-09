@@ -21,12 +21,19 @@ public class UnitBase extends GraphicsPane {
     private double pixelX;
     private double pixelY;
 
+    private Color color;
+
     public UnitBase(String name, int health, int damage, int starLevel) {
+        this(name, health, damage, starLevel, new Color(220, 60, 60)); // default red
+    }
+
+    public UnitBase(String name, int health, int damage, int starLevel, Color color) {
         this.name      = name;
         this.health    = health;
         this.maxHealth = health;
         this.damage    = damage;
         this.starLevel = starLevel;
+        this.color     = color;
     }
 
     // ---- Visual / path ----
@@ -38,7 +45,7 @@ public class UnitBase extends GraphicsPane {
         pixelY = t.getPixelY() + Tile.SIZE / 2.0;
         label = new GLabel("\u2620 " + name, pixelX - 20, pixelY + 5);
         label.setFont("DialogInput-BOLD-13");
-        label.setColor(new Color(220, 60, 60));
+        label.setColor(color);
         screen.add(label);
 
         hpBarBg = new GRect(pixelX - HP_BAR_W / 2.0, pixelY - 16, HP_BAR_W, HP_BAR_H);
