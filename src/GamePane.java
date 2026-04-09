@@ -59,9 +59,13 @@ public class GamePane extends GraphicsPane {
 	}
 
 	private GLabel createTierLabel(ChessPiece piece, GLabel pieceLbl) {
-		int tier = piece.getTier();
 		StringBuilder stars = new StringBuilder();
-		for (int i = 0; i < tier; i++) stars.append("\u2605");
+		if (piece.getTier() == 1) {
+			// no label for freshly placed pieces
+		} else {
+			for (int i = 0; i < piece.getTier(); i++) stars.append("\u2605");
+			if (piece.isHalfStar()) stars.append("\u00BD");
+		}
 		GLabel lbl = new GLabel(stars.toString(), 0, 0);
 		lbl.setFont("DialogInput-BOLD-14");
 		lbl.setColor(new java.awt.Color(0xFFD700));
@@ -153,6 +157,9 @@ public class GamePane extends GraphicsPane {
 		centerLabelOnTile(label, tile);
 		repositionOutlines(outlines, label.getX(), label.getY());
 		outlineLabels.put(piece, outlines);
+		// Show ½ star for freshly placed tier-1 pieces
+		GLabel tierLbl = createTierLabel(piece, label);
+		tierLabels.put(piece, tierLbl);
 		return label;
 	}
 
@@ -191,6 +198,8 @@ public class GamePane extends GraphicsPane {
 				GLabel newTier = createTierLabel(occupant, lbl);
 				tierLabels.put(occupant, newTier);
 			}
+			// Show upgrade paths at tier 2 and tier 3, but NOT at the half-star step
+			if (shop != null && !occupant.isHalfStar()) shop.showUpgradePaths(occupant);
 			return true;
 		}
 
@@ -370,7 +379,9 @@ public class GamePane extends GraphicsPane {
 	                    if (eRow >= 0 && eRow < GRID_SIZE && eCol >= 0 && eCol < GRID_SIZE
 	                            && piece.canAttack(row, col, eRow, eCol)) {
 	                        enemy.takeDamage(piece.getDamage());
-	                        attackCooldowns.put(piece, ATTACK_COOLDOWN);
+	                        int nextCd = piece.getAttackCooldownOverride() >= 0
+	                            ? piece.getAttackCooldownOverride() : ATTACK_COOLDOWN;
+	                        attackCooldowns.put(piece, nextCd);
 	                        animTicks.put(piece, ANIM_DURATION);
 	                        break;
 	                    }

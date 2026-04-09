@@ -11,15 +11,16 @@ public class Shoppanel extends GraphicsPane{
     // -----------------------------------------------------------------------
     private static final int SHOP_X        = 958;   // left edge of shop panel (board ends at 532)
     private static final int SHOP_Y        = 30;
-    private static final int SHOP_W        = 390;
+    private static final int SHOP_W        = 520;
     private static final int SHOP_H        = 580;
 
     private static final int SLOT_COUNT    = 5;
-    private static final int SLOT_W        = 60;
-    private static final int SLOT_H        = 80;
-    private static final int SLOT_GAP      = 8;
+    private static final int SLOT_W        = 82;
+    private static final int SLOT_H        = 90;
+    private static final int SLOT_GAP      = 14;
     private static final int SLOTS_START_Y = SHOP_Y + 80;  // below gold/refresh row
-    private static final int SLOTS_START_X = SHOP_X + 10;
+    // Auto-center slots within the panel
+    private static final int SLOTS_START_X = SHOP_X + (SHOP_W - (SLOT_COUNT * SLOT_W + (SLOT_COUNT - 1) * SLOT_GAP)) / 2;
 
     private static final int GOLD_LABEL_X  = SHOP_X + 10;
     private static final int GOLD_LABEL_Y  = SHOP_Y + 50;
@@ -57,6 +58,12 @@ public class Shoppanel extends GraphicsPane{
 
     private GamePane gamePane;
     private Random rng = new Random();
+
+    // Upgrade overlay state
+    private boolean            showingUpgrade       = false;
+    private ChessPiece         upgradeTarget        = null;
+    private GRect[]            upgradeCardBgs       = new GRect[2];
+    private ArrayList<GObject> upgradeOverlayItems  = new ArrayList<>();
 
     public void setGamePane(GamePane gp) { gamePane = gp; }
 
@@ -195,6 +202,85 @@ public class Shoppanel extends GraphicsPane{
 
     // Convenience: add to canvas and track in contents list
     private void add(GObject obj) {
+        contents.add(obj);
+        mainScreen.add(obj);
+    }
+
+    // -----------------------------------------------------------------------
+    // Upgrade path overlay
+    // -----------------------------------------------------------------------
+
+    public void showUpgradePaths(ChessPiece piece) {
+        showingUpgrade = true;
+        upgradeTarget  = piece;
+
+        // Position below the hint labels (slots end at SLOTS_START_Y+SLOT_H, hints ~+38)
+        int overlayY = SLOTS_START_Y + SLOT_H + 55;
+        int cardW    = (SHOP_W - 30) / 2;
+        int cardH    = 150;
+
+        // Divider line + title section
+        GRect divider = new GRect(SHOP_X + 10, overlayY - 12, SHOP_W - 20, 1);
+        divider.setFilled(true);
+        divider.setFillColor(new Color(0x534AB7));
+        divider.setColor(new Color(0x534AB7));
+        addOverlay(divider);
+
+        GLabel title = new GLabel("Choose Your Path  \u2014  " + piece.getName(), SHOP_X + 10, overlayY + 22);
+        title.setFont("DialogInput-BOLD-13");
+        title.setColor(Color.WHITE);
+        addOverlay(title);
+
+        String[] names = piece.getUpgradePathNames();
+        String[] descs = piece.getUpgradePathDescs();
+
+        for (int i = 0; i < 2; i++) {
+            int cardX = SHOP_X + 10 + i * (cardW + 10);
+            int cardY = overlayY + 32;
+
+            GRect card = new GRect(cardX, cardY, cardW, cardH);
+            card.setFilled(true);
+            card.setFillColor(new Color(0x1E1B4B));
+            card.setColor(new Color(0x7F77DD));
+            upgradeCardBgs[i] = card;
+            addOverlay(card);
+
+            GLabel nameLabel = new GLabel(names[i], cardX + 10, cardY + 24);
+            nameLabel.setFont("DialogInput-BOLD-14");
+            nameLabel.setColor(new Color(0xFFD700));
+            addOverlay(nameLabel);
+
+            GLabel symLabel = new GLabel(piece.getSymbol(), cardX + cardW - 30, cardY + 26);
+            symLabel.setFont("DialogInput-BOLD-20");
+            symLabel.setColor(piece.getPieceColor());
+            addOverlay(symLabel);
+
+            GLabel descLabel = new GLabel(descs[i], cardX + 10, cardY + 50);
+            descLabel.setFont("DialogInput-PLAIN-11");
+            descLabel.setColor(Color.LIGHT_GRAY);
+            addOverlay(descLabel);
+
+            GLabel clickHint = new GLabel("Click to choose", cardX + 10, cardY + cardH - 12);
+            clickHint.setFont("DialogInput-PLAIN-10");
+            clickHint.setColor(new Color(0x7F77DD));
+            addOverlay(clickHint);
+        }
+    }
+
+    private void hideUpgradeOverlay() {
+        for (GObject obj : upgradeOverlayItems) {
+            mainScreen.remove(obj);
+            contents.remove(obj);
+        }
+        upgradeOverlayItems.clear();
+        upgradeCardBgs[0] = null;
+        upgradeCardBgs[1] = null;
+        showingUpgrade = false;
+        upgradeTarget  = null;
+    }
+
+    private void addOverlay(GObject obj) {
+        upgradeOverlayItems.add(obj);
         contents.add(obj);
         mainScreen.add(obj);
     }
@@ -360,6 +446,17 @@ public class Shoppanel extends GraphicsPane{
     public void mouseClicked(MouseEvent e) {
         double x = e.getX(), y = e.getY();
 
+        // Upgrade overlay takes priority — block everything else
+        if (showingUpgrade) {
+            for (int i = 0; i < 2; i++) {
+                if (upgradeCardBgs[i] != null && upgradeCardBgs[i].contains(x, y)) {
+                    upgradeTarget.applyUpgradePath(i);
+                    hideUpgradeOverlay();
+                }
+            }
+            return;
+        }
+
         // Refresh button
         if (isRefreshButton(x, y)) {
             buyRefresh();
@@ -399,11 +496,12 @@ public class Shoppanel extends GraphicsPane{
         if (heldPiece == null) return;
         double x = e.getX(), y = e.getY();
 
-        boolean placed = handleDrop(heldPiece, x, y);
+        ChessPiece dropping = heldPiece;
+        boolean placed = handleDrop(dropping, x, y);
         if (placed) {
             // Deduct gold and clear the slot
             if (heldSlotIndex >= 0) {
-                gold -= heldPiece.getCost();
+                gold -= dropping.getCost();
                 slots[heldSlotIndex] = null;
                 refreshGoldDisplay();
                 refreshSlot(heldSlotIndex);

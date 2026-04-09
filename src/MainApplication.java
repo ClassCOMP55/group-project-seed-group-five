@@ -18,6 +18,17 @@ public class MainApplication extends GraphicsProgram{
 	
 	// background music
 	private SoundClip bgMusic;
+	private double currentVolume = 0.8;
+
+	private static final String[] TRACKS = {
+		"Media/clair-de-lune.wav",
+		"Media/Yoshi's Story Soundtrack - Yo-Yo-Yoshi!.wav"
+	};
+	private static final String[] TRACK_NAMES = {
+		"Clair de Lune",
+		"Yoshi's Story - Yo-Yo-Yoshi!"
+	};
+	private int currentTrackIndex = 0;
 
 	public MainApplication() {
 		super();
@@ -117,9 +128,24 @@ public class MainApplication extends GraphicsProgram{
 	}
 	
 	public void setVolume(double val) {
-		if(bgMusic != null) {
-			bgMusic.setVolume(val);
-		}
+		currentVolume = val;
+		if (bgMusic != null) bgMusic.setVolume(val);
+	}
+
+	public String getCurrentTrackName() {
+		return TRACK_NAMES[currentTrackIndex];
+	}
+
+	public int getTrackCount() {
+		return TRACKS.length;
+	}
+
+	public void changeTrack(int direction) {
+		if (bgMusic != null) bgMusic.stop();
+		currentTrackIndex = (currentTrackIndex + direction + TRACKS.length) % TRACKS.length;
+		bgMusic = new SoundClip(TRACKS[currentTrackIndex]);
+		bgMusic.setVolume(currentVolume);
+		bgMusic.loop();
 	}
 	
 	@Override

@@ -12,6 +12,11 @@ public abstract class ChessPiece extends GraphicsPane{
 
     private Tile   tile;       // the tile this piece currently occupies (null if in shop)
 
+    // Upgrade
+    private boolean upgraded              = false;
+    private boolean halfStar              = false;
+    private int     attackCooldownOverride = -1;  // -1 = use GamePane default
+
     //Visual
     private GLabel label;      // placeholder renderer; swap for GImage once sprites exist
 
@@ -46,21 +51,42 @@ public abstract class ChessPiece extends GraphicsPane{
     public GLabel getLabel() { return label; }
 
     public boolean canMergeWith(ChessPiece other) {
+        // Incoming piece (this) must be tier 1; occupant (other) must not be at max tier
         return other != null
             && other.getClass() == this.getClass()
-            && other.getTier() == this.tier
-            && this.tier < getMaxTier();
+            && this.tier == 1
+            && other.getTier() < other.getMaxTier();
     }
 
     public void promote() {
-        if (tier < getMaxTier()) {
-            tier++;
-            damage = (int)(damage * 1.5); // 50% damage increase per tier
-            cost   = cost * 2;            // reflects upgraded value
+        if (tier == 1) {
+            tier     = 2;
+            halfStar = false;
+            damage   = (int)(damage * 1.5);
+            cost     = cost * 2;
+        } else if (tier == 2 && !halfStar) {
+            halfStar = true;
+            damage   = (int)(damage * 1.2);
+        } else if (tier == 2 && halfStar) {
+            tier     = 3;
+            halfStar = false;
+            damage   = (int)(damage * 1.5);
+            cost     = cost * 2;
         }
     }
 
     public int getMaxTier() { return 3; }
+
+    // ---- Upgrade paths ----
+    public boolean isUpgraded()                  { return upgraded; }
+    public boolean isHalfStar()                  { return halfStar; }
+    public int  getAttackCooldownOverride()       { return attackCooldownOverride; }
+    protected void setAttackCooldownOverride(int v){ attackCooldownOverride = v; }
+    protected void markUpgraded()                 { upgraded = true; }
+
+    public String[] getUpgradePathNames() { return new String[]{"Path A", "Path B"}; }
+    public String[] getUpgradePathDescs() { return new String[]{"", ""}; }
+    public void applyUpgradePath(int path) { markUpgraded(); }
 
 
     public void placedOnTile(Tile t) {
