@@ -9,7 +9,7 @@ public class Shoppanel extends GraphicsPane{
     // -----------------------------------------------------------------------
     // Layout constants
     // -----------------------------------------------------------------------
-    private static final int SHOP_X        = 958;   // left edge of shop panel (board ends at 532)
+    private static final int SHOP_X        = 855;   // left edge of shop panel (board ends at 532)
     private static final int SHOP_Y        = 30;
     private static final int SHOP_W        = 520;
     private static final int SHOP_H        = 580;
