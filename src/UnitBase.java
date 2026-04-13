@@ -1,5 +1,6 @@
 import java.awt.Color;
 import java.util.List;
+import acm.graphics.GImage;
 import acm.graphics.GLabel;
 import acm.graphics.GRect;
 
@@ -10,21 +11,25 @@ public class UnitBase extends GraphicsPane {
     private int damage;
     private int starLevel;
 
-    private GLabel label;
+    protected GLabel label;
+    protected GImage sprite;
     private GRect hpBarBg;
     private GRect hpBarFill;
     private static final int HP_BAR_W = 40;
     private static final int HP_BAR_H = 5;
 
-    private int pathIndex;       // tile we are currently on
-    private int targetIndex;     // tile we are moving toward
+    protected double speed     = 2.0;
+    protected int    goldValue = 5;
+
+    private int pathIndex;
+    private int targetIndex;
     private double pixelX;
     private double pixelY;
 
     private Color color;
 
     public UnitBase(String name, int health, int damage, int starLevel) {
-        this(name, health, damage, starLevel, new Color(220, 60, 60)); // default red
+        this(name, health, damage, starLevel, new Color(220, 60, 60));
     }
 
     public UnitBase(String name, int health, int damage, int starLevel, Color color) {
@@ -38,34 +43,41 @@ public class UnitBase extends GraphicsPane {
 
     // ---- Visual / path ----
 
+    /**
+     * Override in subclasses to render a sprite instead of the default label.
+     * Set either `label` or `sprite` and add it to screen.
+     */
+    protected void createVisual(double px, double py, MainApplication screen) {
+        label = new GLabel("\u2620 " + name, px - 20, py + 5);
+        label.setFont("DialogInput-BOLD-13");
+        label.setColor(color);
+        screen.add(label);
+    }
+
     public void spawnAt(Tile t, MainApplication screen) {
         pathIndex   = 0;
         targetIndex = 1;
         pixelX = t.getPixelX() + Tile.SIZE / 2.0;
         pixelY = t.getPixelY() + Tile.SIZE / 2.0;
-        label = new GLabel("\u2620 " + name, pixelX - 20, pixelY + 5);
-        label.setFont("DialogInput-BOLD-13");
-        label.setColor(color);
-        screen.add(label);
 
-        hpBarBg = new GRect(pixelX - HP_BAR_W / 2.0, pixelY - 16, HP_BAR_W, HP_BAR_H);
+        createVisual(pixelX, pixelY, screen);
+
+        double barY = sprite != null ? pixelY - 55 : pixelY - 16;
+        hpBarBg = new GRect(pixelX - HP_BAR_W / 2.0, barY, HP_BAR_W, HP_BAR_H);
         hpBarBg.setFilled(true);
         hpBarBg.setFillColor(new Color(60, 60, 60));
         hpBarBg.setColor(new Color(60, 60, 60));
         screen.add(hpBarBg);
 
-        hpBarFill = new GRect(pixelX - HP_BAR_W / 2.0, pixelY - 16, HP_BAR_W, HP_BAR_H);
+        hpBarFill = new GRect(pixelX - HP_BAR_W / 2.0, barY, HP_BAR_W, HP_BAR_H);
         hpBarFill.setFilled(true);
         hpBarFill.setFillColor(new Color(50, 200, 80));
         hpBarFill.setColor(new Color(50, 200, 80));
         screen.add(hpBarFill);
     }
 
-    /**
-     * Smoothly advances the enemy toward the next path tile by `speed` pixels.
-     * Returns true when the enemy has arrived at the last tile.
-     */
-    public boolean step(List<Tile> path, double speed) {
+    /** Smoothly advances toward the next path tile. Returns true when end is reached. */
+    public boolean step(List<Tile> path, double spd) {
         if (targetIndex >= path.size()) return true;
 
         Tile target = path.get(targetIndex);
@@ -75,24 +87,28 @@ public class UnitBase extends GraphicsPane {
         double dy = ty - pixelY;
         double dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist <= speed) {
+        if (dist <= spd) {
             pixelX = tx;
             pixelY = ty;
             pathIndex = targetIndex;
             targetIndex++;
         } else {
-            pixelX += speed * dx / dist;
-            pixelY += speed * dy / dist;
+            pixelX += spd * dx / dist;
+            pixelY += spd * dy / dist;
         }
 
-        if (label != null) label.setLocation(pixelX - 20, pixelY + 5);
-        if (hpBarBg   != null) hpBarBg.setLocation(pixelX - HP_BAR_W / 2.0, pixelY - 16);
-        if (hpBarFill != null) hpBarFill.setLocation(pixelX - HP_BAR_W / 2.0, pixelY - 16);
+        if (label  != null) label.setLocation(pixelX - 20, pixelY + 5);
+        if (sprite != null) sprite.setLocation(pixelX - sprite.getWidth()  / 2.0,
+                                               pixelY - sprite.getHeight() / 2.0);
+        double barY = sprite != null ? pixelY - 55 : pixelY - 16;
+        if (hpBarBg   != null) hpBarBg.setLocation(pixelX - HP_BAR_W / 2.0, barY);
+        if (hpBarFill != null) hpBarFill.setLocation(pixelX - HP_BAR_W / 2.0, barY);
         return targetIndex >= path.size();
     }
 
     public void removeFrom(MainApplication screen) {
         if (label     != null) { screen.remove(label);     label     = null; }
+        if (sprite    != null) { screen.remove(sprite);    sprite    = null; }
         if (hpBarBg   != null) { screen.remove(hpBarBg);   hpBarBg   = null; }
         if (hpBarFill != null) { screen.remove(hpBarFill); hpBarFill = null; }
     }
@@ -130,14 +146,16 @@ public class UnitBase extends GraphicsPane {
 
     // ---- Getters ----
 
-    public String getName()       { return name; }
-    public int    getHealth()     { return health; }
-    public int    getMaxHealth()  { return maxHealth; }
-    public int    getDamage()     { return damage; }
-    public int    getStarLevel()  { return starLevel; }
-    public int    getPathIndex()  { return pathIndex; }
-    public int    getTargetIndex(){ return targetIndex; }
-    public double getPixelX()     { return pixelX; }
-    public double getPixelY()     { return pixelY; }
-    public GLabel getLabel()      { return label; }
+    public String getName()        { return name; }
+    public int    getHealth()      { return health; }
+    public int    getMaxHealth()   { return maxHealth; }
+    public int    getDamage()      { return damage; }
+    public int    getStarLevel()   { return starLevel; }
+    public int    getPathIndex()   { return pathIndex; }
+    public int    getTargetIndex() { return targetIndex; }
+    public double getPixelX()      { return pixelX; }
+    public double getPixelY()      { return pixelY; }
+    public double getSpeed()       { return speed; }
+    public int    getGoldValue()   { return goldValue; }
+    public GLabel getLabel()       { return label; }
 }

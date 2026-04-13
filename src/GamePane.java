@@ -1,6 +1,7 @@
 import java.awt.Color;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,18 +29,18 @@ public class GamePane extends GraphicsPane {
 
 	private final List<UnitBase> enemies = new ArrayList<>();
 	private Timer gameTimer;
-	// [red, blue, green] counts per round (BTD6-inspired)
+	// Columns: [Original, LightBlue, Purple, Red, DarkBlue, Pink, Yellow]
 	private static final int[][] WAVE_DATA = {
-		{20,  0,   0},   // Round 1
-		{35,  0,   0},   // Round 2
-		{25,  5,   0},   // Round 3
-		{35,  18,  0},   // Round 4
-		{5,   27,  0},   // Round 5
-		{15,  15,  4},   // Round 6
-		{20,  20,  5},   // Round 7
-		{10,  20,  14},  // Round 8
-		{0,   0,   30},  // Round 9
-		{0,   102, 0},   // Round 10
+		{10,  0,   0,  0,  0,  0,  0},  // Round 1  — basics only
+		{20,  5,   0,  0,  0,  0,  0},  // Round 2  — introduce LightBlue
+		{15,  10,  0,  5,  0,  0,  0},  // Round 3  — add Red (fast)
+		{20,  12,  2,  8,  0,  0,  0},  // Round 4  — first Purples
+		{10,  15,  5,  10, 1,  0,  0},  // Round 5  — first DarkBlue
+		{12,  12,  8,  10, 2,  5,  0},  // Round 6  — add Pink
+		{10,  15,  10, 12, 3,  8,  3},  // Round 7  — all 7 types
+		{8,   12,  12, 18, 5,  10, 8},  // Round 8
+		{5,   8,   15, 15, 8,  5,  15}, // Round 9
+		{0,   10,  20, 20, 10, 8,  20}, // Round 10 — no basics, heavy mix
 	};
 	private final java.util.LinkedList<Integer> spawnQueue = new java.util.LinkedList<>();
 	private GRect playBtn;
@@ -371,20 +372,15 @@ public class GamePane extends GraphicsPane {
 		waveNumber++;
 		spawnQueue.clear();
 		tickCount = 0;
-		// Build interleaved spawn list from WAVE_DATA
+		// Build shuffled spawn list from WAVE_DATA (all 7 types)
 		int waveIdx = Math.min(waveNumber, WAVE_DATA.length) - 1;
 		int[] counts = WAVE_DATA[waveIdx];
-		int red = counts[0], blue = counts[1], green = counts[2];
-		int total = red + blue + green;
-		int ri = 0, bi = 0, gi = 0;
-		for (int i = 0; i < total; i++) {
-			double pos = (double) i / total;
-			if (gi < green && pos >= (double)(red + blue) / total) { spawnQueue.add(2); gi++; }
-			else if (bi < blue && pos >= (double) red / total)     { spawnQueue.add(1); bi++; }
-			else if (ri < red)                                      { spawnQueue.add(0); ri++; }
-			else if (bi < blue)                                     { spawnQueue.add(1); bi++; }
-			else                                                    { spawnQueue.add(2); gi++; }
+		List<Integer> all = new ArrayList<>();
+		for (int type = 0; type < counts.length; type++) {
+			for (int n = 0; n < counts[type]; n++) all.add(type);
 		}
+		Collections.shuffle(all, rng);
+		spawnQueue.addAll(all);
 		currentSpawnInterval = waveNumber == 1 ? 90 : Math.max(20, 90 - (waveNumber - 1) * 10);
 		if (waveLabel != null) waveLabel.setLabel("Wave: " + waveNumber);
 		gameTimer = new Timer(16, e -> tick());
@@ -396,9 +392,15 @@ private void tick() {
 	    if (!spawnQueue.isEmpty() && tickCount % currentSpawnInterval == 0) {
 	        int type = spawnQueue.poll();
 	        UnitBase enemy;
-	        if      (type == 2) enemy = new UnitBase("Orc",    32, 8, 1, new java.awt.Color(50, 180, 50));
-	        else if (type == 1) enemy = new UnitBase("Troll",  16, 8, 1, new java.awt.Color(60, 120, 220));
-	        else                enemy = new UnitBase("Goblin",  8, 8, 1);
+	        switch (type) {
+	            case 1:  enemy = new LightBlueOgre(); break;
+	            case 2:  enemy = new PurpleOgre();    break;
+	            case 3:  enemy = new RedOgre();        break;
+	            case 4:  enemy = new DarkBlueOgre();  break;
+	            case 5:  enemy = new PinkOgre();       break;
+	            case 6:  enemy = new YellowOgre();    break;
+	            default: enemy = new OriginalOgre();
+	        }
 	        enemy.spawnAt(enemyPath.get(0), mainScreen);
 	        enemies.add(enemy);
 	    }
@@ -407,7 +409,7 @@ private void tick() {
 	    boolean kingDied = false; // NEW
 	    List<UnitBase> toRemove = new ArrayList<>();
 	    for (UnitBase enemy : enemies) {
-	        if (enemy.step(enemyPath, ENEMY_SPEED)) {
+	        if (enemy.step(enemyPath, enemy.getSpeed() * (fastForward ? 2.0 : 1.0))) {
 	            enemy.removeFrom(mainScreen);
 	            toRemove.add(enemy);
 	            damageKing(4);
@@ -467,6 +469,7 @@ private void tick() {
 	        if (!enemy.isAlive()) {
 	            enemy.removeFrom(mainScreen);
 	            dead.add(enemy);
+	            if (shop != null) shop.awardGold(enemy.getGoldValue());
 	        }
 	    }
 	    enemies.removeAll(dead);
