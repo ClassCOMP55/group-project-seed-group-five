@@ -13,6 +13,7 @@ public class UnitBase extends GraphicsPane {
 
     protected GLabel label;
     protected GImage sprite;
+    private GRect flashOverlay;  // semi-transparent red rect over sprite on hit
     private GRect hpBarBg;
     private GRect hpBarFill;
     private static final int HP_BAR_W = 40;
@@ -21,12 +22,15 @@ public class UnitBase extends GraphicsPane {
     protected double speed     = 2.0;
     protected int    goldValue = 5;
 
+    private Color color;
+    private int   flashTicks = 0;
+    private boolean dying     = false;
+    private int     deathTicks = 0;
+
     private int pathIndex;
     private int targetIndex;
     private double pixelX;
     private double pixelY;
-
-    private Color color;
 
     public UnitBase(String name, int health, int damage, int starLevel) {
         this(name, health, damage, starLevel, new Color(220, 60, 60));
@@ -43,10 +47,6 @@ public class UnitBase extends GraphicsPane {
 
     // ---- Visual / path ----
 
-    /**
-     * Override in subclasses to render a sprite instead of the default label.
-     * Set either `label` or `sprite` and add it to screen.
-     */
     protected void createVisual(double px, double py, MainApplication screen) {
         label = new GLabel("\u2620 " + name, px - 20, py + 5);
         label.setFont("DialogInput-BOLD-13");
@@ -62,6 +62,18 @@ public class UnitBase extends GraphicsPane {
 
         createVisual(pixelX, pixelY, screen);
 
+        // Flash overlay for sprites
+        if (sprite != null) {
+            flashOverlay = new GRect(pixelX - sprite.getWidth() / 2.0,
+                                     pixelY - sprite.getHeight() / 2.0,
+                                     sprite.getWidth(), sprite.getHeight());
+            flashOverlay.setFilled(true);
+            flashOverlay.setFillColor(new Color(220, 50, 50, 140));
+            flashOverlay.setColor(new Color(0, 0, 0, 0));
+            flashOverlay.setVisible(false);
+            screen.add(flashOverlay);
+        }
+
         double barY = sprite != null ? pixelY - 55 : pixelY - 16;
         hpBarBg = new GRect(pixelX - HP_BAR_W / 2.0, barY, HP_BAR_W, HP_BAR_H);
         hpBarBg.setFilled(true);
@@ -76,7 +88,6 @@ public class UnitBase extends GraphicsPane {
         screen.add(hpBarFill);
     }
 
-    /** Smoothly advances toward the next path tile. Returns true when end is reached. */
     public boolean step(List<Tile> path, double spd) {
         if (targetIndex >= path.size()) return true;
 
@@ -100,17 +111,50 @@ public class UnitBase extends GraphicsPane {
         if (label  != null) label.setLocation(pixelX - 20, pixelY + 5);
         if (sprite != null) sprite.setLocation(pixelX - sprite.getWidth()  / 2.0,
                                                pixelY - sprite.getHeight() / 2.0);
+        if (flashOverlay != null) flashOverlay.setLocation(pixelX - sprite.getWidth()  / 2.0,
+                                                           pixelY - sprite.getHeight() / 2.0);
         double barY = sprite != null ? pixelY - 55 : pixelY - 16;
         if (hpBarBg   != null) hpBarBg.setLocation(pixelX - HP_BAR_W / 2.0, barY);
         if (hpBarFill != null) hpBarFill.setLocation(pixelX - HP_BAR_W / 2.0, barY);
+
+        // Tick down hit flash
+        if (flashTicks > 0) {
+            flashTicks--;
+            if (flashTicks == 0) {
+                if (label        != null) label.setColor(color);
+                if (flashOverlay != null) flashOverlay.setVisible(false);
+            }
+        }
+
         return targetIndex >= path.size();
     }
 
+    // ---- Death animation ----
+
+    public void startDeath() {
+        dying      = true;
+        deathTicks = 15;
+    }
+
+    /** Animate one death frame. Returns true when the animation is finished. */
+    public boolean tickDeath() {
+        deathTicks--;
+        if (label != null) {
+            int sz = Math.max(1, 13 - (15 - deathTicks));
+            label.setFont("DialogInput-BOLD-" + sz);
+        }
+        if (sprite != null) sprite.scale(0.78, 0.78);
+        return deathTicks <= 0;
+    }
+
+    public boolean isDying() { return dying; }
+
     public void removeFrom(MainApplication screen) {
-        if (label     != null) { screen.remove(label);     label     = null; }
-        if (sprite    != null) { screen.remove(sprite);    sprite    = null; }
-        if (hpBarBg   != null) { screen.remove(hpBarBg);   hpBarBg   = null; }
-        if (hpBarFill != null) { screen.remove(hpBarFill); hpBarFill = null; }
+        if (label        != null) { screen.remove(label);        label        = null; }
+        if (sprite       != null) { screen.remove(sprite);       sprite       = null; }
+        if (flashOverlay != null) { screen.remove(flashOverlay); flashOverlay = null; }
+        if (hpBarBg      != null) { screen.remove(hpBarBg);      hpBarBg      = null; }
+        if (hpBarFill    != null) { screen.remove(hpBarFill);    hpBarFill    = null; }
     }
 
     // ---- Combat ----
@@ -118,6 +162,12 @@ public class UnitBase extends GraphicsPane {
     public void takeDamage(int amount) {
         health -= amount;
         if (health < 0) health = 0;
+
+        // Hit flash
+        flashTicks = 8;
+        if (label        != null) label.setColor(Color.WHITE);
+        if (flashOverlay != null) flashOverlay.setVisible(true);
+
         if (hpBarFill != null) {
             double pct = (double) health / maxHealth;
             hpBarFill.setSize(HP_BAR_W * pct, HP_BAR_H);
@@ -127,7 +177,7 @@ public class UnitBase extends GraphicsPane {
         }
     }
 
-    public boolean isAlive() { return health > 0; }
+    public boolean isAlive()  { return health > 0; }
 
     public void attackDamage(UnitBase target) {
         if (target != null && isAlive()) target.takeDamage(damage);

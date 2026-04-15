@@ -29,6 +29,13 @@ public class GamePane extends GraphicsPane {
 
 	private final List<UnitBase> enemies = new ArrayList<>();
 	private Timer gameTimer;
+
+	// Floating gold text
+	private static class FloatingText {
+		GLabel label; int ticks;
+		FloatingText(GLabel lbl) { label = lbl; ticks = 35; }
+	}
+	private final List<FloatingText> floatingTexts = new ArrayList<>();
 	// Columns: [Original, LightBlue, Purple, Red, DarkBlue, Pink, Yellow]
 	private static final int[][] WAVE_DATA = {
 		{10,  0,   0,  0,  0,  0,  0},  // Round 1  — basics only
@@ -359,11 +366,11 @@ public class GamePane extends GraphicsPane {
 	private int currentSpawnInterval = SPAWN_INTERVAL;
 	private int tickCount = 0;
 
-	private final Map<ChessPiece, Integer> attackCooldowns = new HashMap<>();
-	private final Map<ChessPiece, Integer> animTicks       = new HashMap<>();
-	private static final int    ATTACK_COOLDOWN = 90;   // ticks between attacks (~1.5s)
-	private static final int    ANIM_DURATION   = 20;   // ticks for bounce animation
-	private static final double BOUNCE_HEIGHT   = 22.0; // pixels to bounce upward
+	private final Map<ChessPiece, Integer>  attackCooldowns = new HashMap<>();
+	private final Map<ChessPiece, Integer>  animTicks       = new HashMap<>();
+	private final Map<ChessPiece, double[]> attackTargets   = new HashMap<>();
+	private static final int    ATTACK_COOLDOWN = 90;
+	private static final int    ANIM_DURATION   = 20;
 
 	private int waveNumber = 0;
 
@@ -406,14 +413,15 @@ private void tick() {
 	    }
 
 	    // Move enemies; collect those that reached the King
-	    boolean kingDied = false; // NEW
+	    boolean kingDied = false;
 	    List<UnitBase> toRemove = new ArrayList<>();
 	    for (UnitBase enemy : enemies) {
+	        if (enemy.isDying()) continue; // death animation handled below
 	        if (enemy.step(enemyPath, enemy.getSpeed() * (fastForward ? 2.0 : 1.0))) {
 	            enemy.removeFrom(mainScreen);
 	            toRemove.add(enemy);
 	            damageKing(4);
-	            if (kingHp <= 0) kingDied = true; // NEW
+	            if (kingHp <= 0) kingDied = true;
 	        }
 	    }
 	    enemies.removeAll(toRemove);
@@ -444,6 +452,10 @@ private void tick() {
 	                            ? piece.getAttackCooldownOverride() : ATTACK_COOLDOWN;
 	                        attackCooldowns.put(piece, nextCd);
 	                        animTicks.put(piece, ANIM_DURATION);
+	                        attackTargets.put(piece, new double[]{
+                            BOARD_X + eCol * TILE_SIZE + TILE_SIZE / 2.0,
+                            BOARD_Y + eRow * TILE_SIZE + TILE_SIZE / 2.0
+                        });
 	                        break;
 	                    }
 	                }
@@ -454,35 +466,67 @@ private void tick() {
 	            if (at > 0) {
 	                animTicks.put(piece, at - 1);
 	                double progress = (double) at / ANIM_DURATION;
-	                double yOffset = -Math.sin(progress * Math.PI) * BOUNCE_HEIGHT;
-	                applyPieceOffset(piece, yOffset);
+	                double xOff = 0, yOff = 0;
+                double[] tgt = attackTargets.get(piece);
+                if (tgt != null && piece.getTile() != null) {
+                    Tile t = piece.getTile();
+                    double pcx = BOARD_X + t.getCol() * TILE_SIZE + TILE_SIZE / 2.0;
+                    double pcy = BOARD_Y + t.getRow() * TILE_SIZE + TILE_SIZE / 2.0;
+                    double s = Math.sin(progress * Math.PI);
+                    xOff = s * (tgt[0] - pcx);
+                    yOff = s * (tgt[1] - pcy);
+                }
+	                applyPieceOffset(piece, xOff, yOff);
 	            } else if (at == 0 && animTicks.containsKey(piece)) {
-	                applyPieceOffset(piece, 0);
+	                applyPieceOffset(piece, 0, 0);
 	                animTicks.remove(piece);
 	            }
 	        }
 	    }
 
-	    // Remove enemies killed by pieces
+	    // Death animations + removal
 	    List<UnitBase> dead = new ArrayList<>();
 	    for (UnitBase enemy : enemies) {
-	        if (!enemy.isAlive()) {
-	            enemy.removeFrom(mainScreen);
-	            dead.add(enemy);
+	        if (enemy.isDying()) {
+	            if (enemy.tickDeath()) {
+	                enemy.removeFrom(mainScreen);
+	                dead.add(enemy);
+	            }
+	        } else if (!enemy.isAlive()) {
 	            if (shop != null) shop.awardGold(enemy.getGoldValue());
+	            spawnFloatingText("+" + enemy.getGoldValue() + "g",
+	                              enemy.getPixelX(), enemy.getPixelY());
+	            enemy.startDeath();
 	        }
 	    }
 	    enemies.removeAll(dead);
 
+	    // Advance floating gold text
+	    List<FloatingText> expiredTexts = new ArrayList<>();
+	    for (FloatingText ft : floatingTexts) {
+	        ft.label.move(0, -1.5);
+	        ft.ticks--;
+	        if (ft.ticks <= 0) { mainScreen.remove(ft.label); expiredTexts.add(ft); }
+	    }
+	    floatingTexts.removeAll(expiredTexts);
+
 	    if (spawnQueue.isEmpty() && enemies.isEmpty()) gameTimer.stop();
 	}
 
-	private void applyPieceOffset(ChessPiece piece, double yOffset) {
+	private void spawnFloatingText(String text, double x, double y) {
+		GLabel lbl = new GLabel(text, x - 10, y);
+		lbl.setFont("DialogInput-BOLD-13");
+		lbl.setColor(new Color(0xFFD700));
+		mainScreen.add(lbl);
+		floatingTexts.add(new FloatingText(lbl));
+	}
+
+	private void applyPieceOffset(ChessPiece piece, double xOffset, double yOffset) {
 		GLabel label = piece.getLabel();
 		Tile tile = piece.getTile();
 		if (label == null || tile == null) return;
 		centerLabelOnTile(label, tile);
-		label.setLocation(label.getX(), label.getY() + yOffset);
+		label.setLocation(label.getX() + xOffset, label.getY() + yOffset);
 		List<GLabel> outlines = outlineLabels.get(piece);
 		if (outlines != null) repositionOutlines(outlines, label.getX(), label.getY());
 		GLabel tierLbl = tierLabels.get(piece);
