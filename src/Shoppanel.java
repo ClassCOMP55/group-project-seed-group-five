@@ -315,19 +315,20 @@ public class Shoppanel extends GraphicsPane{
      */
     public ChessPiece buySlot(int slotIndex) {
         if (slotIndex < 0 || slotIndex >= SLOT_COUNT) return null;
+
         ChessPiece p = slots[slotIndex];
-        if (p == null)         return null;
-        if (gold < p.getCost()) {
+        if (p == null) return null;
+
+        if (!spendGold(p.getCost())) {
             flashSlotRed(slotIndex);
             return null;
         }
-        gold -= p.getCost();
+
         slots[slotIndex] = null;
-        refreshGoldDisplay();
         refreshSlot(slotIndex);
         return p;
     }
-
+    
     /** Spend gold to refresh all slots. Returns false if not enough gold. */
     public boolean buyRefresh() {
         if (gold < REFRESH_COST) return false;
@@ -341,7 +342,15 @@ public class Shoppanel extends GraphicsPane{
     // -----------------------------------------------------------------------
     // Gold management
     // -----------------------------------------------------------------------
-
+    
+    private boolean spendGold(int amount) {
+        if (amount < 0) return false;
+        if (gold < amount) return false;
+        gold -= amount;
+        refreshGoldDisplay();
+        return true;
+    }
+    
     public void awardGold(int amount) {
         gold += amount;
         refreshGoldDisplay();
@@ -446,7 +455,6 @@ public class Shoppanel extends GraphicsPane{
     public void mouseClicked(MouseEvent e) {
         double x = e.getX(), y = e.getY();
 
-        // Upgrade overlay takes priority — block everything else
         if (showingUpgrade) {
             for (int i = 0; i < 2; i++) {
                 if (upgradeCardBgs[i] != null && upgradeCardBgs[i].contains(x, y)) {
@@ -457,32 +465,25 @@ public class Shoppanel extends GraphicsPane{
             return;
         }
 
-        // Refresh button
         if (isRefreshButton(x, y)) {
             buyRefresh();
             return;
-        }
-
-        // Shop slot click — buy piece and immediately "hold" it
-        int slotIdx = getSlotAt(x, y);
-        if (slotIdx >= 0) {
-            ChessPiece bought = buySlot(slotIdx);
-            if (bought != null) {
-                holdPiece(bought, slotIdx, x, y);
-            }
         }
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
-    	super.mousePressed(e);
+        super.mousePressed(e);
         double x = e.getX(), y = e.getY();
+
         int slotIdx = getSlotAt(x, y);
-        if (slotIdx >= 0 && slots[slotIdx] != null) {
-            // Start drag without buying yet (buy on release at valid tile)
-            heldPiece     = slots[slotIdx];
-            heldSlotIndex = slotIdx;
-            showDragGhost(heldPiece, x, y);
+        if (slotIdx >= 0) {
+            ChessPiece bought = buySlot(slotIdx);
+            if (bought != null) {
+                heldPiece = bought;
+                heldSlotIndex = slotIdx;
+                showDragGhost(heldPiece, x, y);
+            }
         }
     }
 
@@ -494,21 +495,14 @@ public class Shoppanel extends GraphicsPane{
     @Override
     public void mouseReleased(MouseEvent e) {
         if (heldPiece == null) return;
-        double x = e.getX(), y = e.getY();
 
+        double x = e.getX(), y = e.getY();
         ChessPiece dropping = heldPiece;
-        boolean placed = handleDrop(dropping, x, y);
-        if (placed) {
-            // Deduct gold and clear the slot
-            if (heldSlotIndex >= 0) {
-                gold -= dropping.getCost();
-                slots[heldSlotIndex] = null;
-                refreshGoldDisplay();
-                refreshSlot(heldSlotIndex);
-            }
-        }
+
+        handleDrop(dropping, x, y);
+
         clearDragGhost();
-        heldPiece     = null;
+        heldPiece = null;
         heldSlotIndex = -1;
     }
 
