@@ -29,7 +29,12 @@ public class GamePane extends GraphicsPane {
 
 	private final List<UnitBase> enemies = new ArrayList<>();
 	private Timer gameTimer;
-
+	
+	private final InteractionFeedback feedback = new InteractionFeedback();
+	private Tile previewTile = null;
+	private static final int HOVER_PADDING = 18;
+	
+			
 	// Floating gold text
 	private static class FloatingText {
 		GLabel label; int ticks;
@@ -150,6 +155,58 @@ public class GamePane extends GraphicsPane {
 		if (row >= 0 && row < GRID_SIZE && col >= 0 && col < GRID_SIZE) {return tiles[row][col];}
 		return null;
 	}
+	
+	private boolean isInsideTileWithPadding(double x, double y, Tile tile, int padding) {
+		if (tile == null) return false;
+		
+		double left = tile.getPixelX() - padding;
+		double right = tile.getPixelX() + Tile.SIZE + padding;
+		double top = tile.getPixelY() - padding;
+		double bottom = tile.getPixelY() + Tile.SIZE + padding;
+		
+		return x >= left && x <= right && y >= top && y <= bottom;
+	}
+	
+	public Tile getValidMergeTile(ChessPiece draggedPiece, double pixelX, double pixelY) {
+		Tile tile = getTileAt((int) pixelX, (int) pixelY);
+		
+		//If the mouse is not on the tile, keep the old preview tile until as long as the mouse is close enough
+		
+		if (tile == null && previewTile != null && isInsideTileWithPadding(pixelX, pixelY, previewTile, HOVER_PADDING)) {
+			tile = previewTile;
+		}
+		
+		if (tile == null) return null;
+		if (!tile.isOccupied()) return null;
+		if (enemyPath.contains(tile)) return null;
+		
+		ChessPiece occupant = tile.getOccupant();
+		
+		if (draggedPiece != null && draggedPiece.canMergeWith(occupant)) return tile;
+		
+		return null;
+	}
+	
+	public void previewMergHover(ChessPiece draggedPiece, double pixelX, double pixelY) {
+		Tile validTile = getValidMergeTile(draggedPiece, pixelX, pixelY);
+		
+		if (validTile != null) {
+			if (previewTile != validTile) {
+				feedback.showMergeHighlight(mainScreen,  validTile);
+				previewTile = validTile;
+			}
+			
+			return;
+		}
+		
+		//This will only clear the merge cue if the mouse and piece are no longer on the tile of the piece
+		
+		if (previewTile != null && !isInsideTileWithPadding(pixelX, pixelY, previewTile, HOVER_PADDING)) {
+			clearMergePreview();
+		}
+	}
+	
+	
 
 	private void centerLabelOnTile(GLabel label, Tile tile) {
 		double x = tile.getPixelX() + (TILE_SIZE - label.getWidth()) / 2.0 - 2;
@@ -197,6 +254,39 @@ public class GamePane extends GraphicsPane {
 				outlines.get(i++).setLocation(baseX + dx, baseY + dy);
 			}
 		}
+	}
+	
+	public boolean isValidMergeHover(ChessPiece draggedPiece, double pixelX, double pixelY) {
+		Tile tile = getTileAt((int) pixelX, (int) pixelY);
+		
+		if (tile == null) return false;
+		if (!tile.isOccupied()) return false;
+		if (enemyPath.contains(tile)) return false;
+		
+		ChessPiece occupant = tile.getOccupant();
+		return draggedPiece != null && draggedPiece.canMergeWith(occupant);
+	}
+	
+	public void previewMergeHover(ChessPiece draggedPiece, double pixelX, double pixelY) {
+		Tile tile = getTileAt((int) pixelX, (int) pixelY);
+		
+		if (tile != null
+				&& tile.isOccupied()
+				&& !enemyPath.contains(tile)
+				&& draggedPiece != null
+				&& draggedPiece.canMergeWith(tile.getOccupant())) {
+			if (previewTile != tile) {
+				feedback.showMergeHighlight(mainScreen, tile);
+				previewTile = tile;
+			}
+			else {clearMergePreview();}
+		}
+		
+	}
+	
+	public void clearMergePreview() {
+		feedback.clear(mainScreen);
+		previewTile = null;
 	}
 
 	public boolean tryPlaceOrMerge(ChessPiece piece, double pixelX, double pixelY) {
@@ -580,6 +670,8 @@ private void tick() {
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
+		clearMergePreview();
+		
 		if (heldPiece == null) return;
 		Tile target = getTileAt(e.getX(), e.getY());
 		if (target != null && !target.isOccupied() && !enemyPath.contains(target)) {

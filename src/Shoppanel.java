@@ -452,6 +452,7 @@ public class Shoppanel extends GraphicsPane{
     // Mouse events
     // -----------------------------------------------------------------------
 
+    @Override
     public void mouseClicked(MouseEvent e) {
         double x = e.getX(), y = e.getY();
 
@@ -474,22 +475,35 @@ public class Shoppanel extends GraphicsPane{
     @Override
     public void mousePressed(MouseEvent e) {
         super.mousePressed(e);
+        
+        if (heldPiece != null) return;
         double x = e.getX(), y = e.getY();
 
         int slotIdx = getSlotAt(x, y);
-        if (slotIdx >= 0) {
-            ChessPiece bought = buySlot(slotIdx);
-            if (bought != null) {
-                heldPiece = bought;
-                heldSlotIndex = slotIdx;
-                showDragGhost(heldPiece, x, y);
-            }
+        if (slotIdx >= 0 && slots[slotIdx] != null) {
+            heldPiece = slots[slotIdx];
+            heldSlotIndex = slotIdx;
+            showDragGhost(heldPiece,x , y);
         }
     }
 
     @Override
     public void mouseDragged(MouseEvent e) {
-        moveDragGhost(e.getX(), e.getY());
+    	if (heldPiece == null) return;
+    	
+        Tile mergeTile = null;
+        
+        if (gamePane != null) {
+        	gamePane.previewMergeHover(heldPiece, e.getX(), e.getY());
+        	mergeTile = gamePane.getValidMergeTile(heldPiece,  e.getX(), e.getY());
+        }
+        
+        if (mergeTile != null && heldLabel != null) {
+        	double snapX = mergeTile.getPixelX() + (Tile.SIZE - heldLabel.getWidth()) / 2.0;
+        	double snapY = mergeTile.getPixelY() + (Tile.SIZE + heldLabel.getHeight()) / 2.0;
+        	heldLabel.setLocation(snapX, snapY);
+        }
+        else {moveDragGhost(e.getX(), e.getY()); }
     }
 
     @Override
@@ -498,9 +512,22 @@ public class Shoppanel extends GraphicsPane{
 
         double x = e.getX(), y = e.getY();
         ChessPiece dropping = heldPiece;
-
-        handleDrop(dropping, x, y);
-
+        
+        boolean placed = handleDrop (dropping, x, y);
+        
+        if (gamePane != null) {gamePane.clearMergePreview();}
+        
+        if (placed) {
+        	if (heldSlotIndex >= 0) {
+        		gold -= dropping.getCost();
+        		slots[heldSlotIndex] = null;
+        		refreshGoldDisplay();
+        		refreshSlot(heldSlotIndex);
+        	}
+        }
+        //Should now be the case where if the piece is not placed on board then nothing will happen
+        //The piece will go back to the shop
+        
         clearDragGhost();
         heldPiece = null;
         heldSlotIndex = -1;
