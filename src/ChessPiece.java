@@ -16,6 +16,9 @@ public abstract class ChessPiece extends GraphicsPane{
     private boolean upgraded              = false;
     private boolean halfStar              = false;
     private int     attackCooldownOverride = -1;  // -1 = use GamePane default
+    protected int   range                 = 3;    // max tile distance for ranged pieces
+    private Color   colorOverride         = null;
+    private boolean pawnTransform         = false;
 
     //Visual
     private GLabel label;      // placeholder renderer; swap for GImage once sprites exist
@@ -37,7 +40,7 @@ public abstract class ChessPiece extends GraphicsPane{
         String display = symbol + " " + name + " T" + tier;
         label = new GLabel(display, x, y);
         label.setFont("DialogInput-BOLD-14");
-        label.setColor(getPieceColor());
+        label.setColor(getEffectiveColor());
         return label;
     }
 
@@ -78,15 +81,26 @@ public abstract class ChessPiece extends GraphicsPane{
     public int getMaxTier() { return 3; }
 
     // ---- Upgrade paths ----
-    public boolean isUpgraded()                  { return upgraded; }
-    public boolean isHalfStar()                  { return halfStar; }
-    public int  getAttackCooldownOverride()       { return attackCooldownOverride; }
+    public boolean isUpgraded()                   { return upgraded; }
+    public boolean isHalfStar()                   { return halfStar; }
+    public int  getAttackCooldownOverride()        { return attackCooldownOverride; }
     protected void setAttackCooldownOverride(int v){ attackCooldownOverride = v; }
-    protected void markUpgraded()                 { upgraded = true; }
+    protected void markUpgraded()                  { upgraded = true; }
+    protected void forceTier(int t)                { this.tier = t; }
+    public void setColorOverride(Color c)          { colorOverride = c; }
+    public Color getEffectiveColor()               { return colorOverride != null ? colorOverride : getPieceColor(); }
+    public void markPawnTransform()                { pawnTransform = true; }
+    public boolean isPawnTransform()               { return pawnTransform; }
 
-    public String[] getUpgradePathNames() { return new String[]{"Path A", "Path B"}; }
-    public String[] getUpgradePathDescs() { return new String[]{"", ""}; }
-    public void applyUpgradePath(int path) { markUpgraded(); }
+    public String[] getUpgradePathNames() { return new String[]{"Swift", "Ranged"}; }
+    public String[] getUpgradePathDescs() { return new String[]{"Faster attack speed", "Range: 3 → 5 tiles"}; }
+    public void applyUpgradePath(int path) {
+        markUpgraded();
+        if (path == 0) setAttackCooldownOverride(45); // ~2x faster than default 90
+        else           range = 5;
+    }
+
+    public int getRange() { return range; }
 
 
     public void placedOnTile(Tile t) {

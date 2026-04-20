@@ -2,7 +2,7 @@ import acm.graphics.GImage;
 
 // OriginalOgre — balanced, medium speed
 class OriginalOgre extends UnitBase {
-    public OriginalOgre() { super("Ogre", 80, 10, 1); speed = 2.0; goldValue = 5; }
+    public OriginalOgre() { super("Ogre", 40, 10, 1); speed = 2.0; goldValue = 5; }
 
     @Override
     protected void createVisual(double px, double py, MainApplication screen) {
@@ -15,7 +15,7 @@ class OriginalOgre extends UnitBase {
 
 // RedOgre — fast, low HP
 class RedOgre extends UnitBase {
-    public RedOgre() { super("Red Ogre", 40, 8, 1); speed = 3.5; goldValue = 3; }
+    public RedOgre() { super("Red Ogre", 20, 8, 1); speed = 3.5; goldValue = 3; }
 
     @Override
     protected void createVisual(double px, double py, MainApplication screen) {
@@ -28,7 +28,7 @@ class RedOgre extends UnitBase {
 
 // LightBlueOgre — medium speed, medium HP
 class LightBlueOgre extends UnitBase {
-    public LightBlueOgre() { super("Blue Ogre", 70, 8, 1); speed = 2.5; goldValue = 4; }
+    public LightBlueOgre() { super("Blue Ogre", 35, 8, 1); speed = 2.5; goldValue = 4; }
 
     @Override
     protected void createVisual(double px, double py, MainApplication screen) {
@@ -41,7 +41,7 @@ class LightBlueOgre extends UnitBase {
 
 // DarkBlueOgre — slow tank, very high HP
 class DarkBlueOgre extends UnitBase {
-    public DarkBlueOgre() { super("Dark Ogre", 200, 15, 1); speed = 1.0; goldValue = 20; }
+    public DarkBlueOgre() { super("Dark Ogre", 100, 15, 1); speed = 1.0; goldValue = 20; }
 
     @Override
     protected void createVisual(double px, double py, MainApplication screen) {
@@ -54,7 +54,7 @@ class DarkBlueOgre extends UnitBase {
 
 // PinkOgre — fragile, low damage
 class PinkOgre extends UnitBase {
-    public PinkOgre() { super("Pink Ogre", 35, 5, 1); speed = 2.5; goldValue = 2; }
+    public PinkOgre() { super("Pink Ogre", 18, 5, 1); speed = 2.5; goldValue = 2; }
 
     @Override
     protected void createVisual(double px, double py, MainApplication screen) {
@@ -67,7 +67,7 @@ class PinkOgre extends UnitBase {
 
 // PurpleOgre — heavy hitter, slow
 class PurpleOgre extends UnitBase {
-    public PurpleOgre() { super("Purple Ogre", 150, 20, 1); speed = 1.5; goldValue = 15; }
+    public PurpleOgre() { super("Purple Ogre", 75, 20, 1); speed = 1.5; goldValue = 15; }
 
     @Override
     protected void createVisual(double px, double py, MainApplication screen) {
@@ -80,7 +80,7 @@ class PurpleOgre extends UnitBase {
 
 // YellowOgre — very fast, light HP
 class YellowOgre extends UnitBase {
-    public YellowOgre() { super("Yellow Ogre", 45, 8, 1); speed = 4.0; goldValue = 4; }
+    public YellowOgre() { super("Yellow Ogre", 23, 8, 1); speed = 4.0; goldValue = 4; }
 
     @Override
     protected void createVisual(double px, double py, MainApplication screen) {

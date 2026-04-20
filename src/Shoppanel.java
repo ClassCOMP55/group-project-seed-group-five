@@ -29,7 +29,7 @@ public class Shoppanel extends GraphicsPane{
     private static final int REFRESH_Y     = SHOP_Y + 28;
     private static final int REFRESH_W     = 160;
     private static final int REFRESH_H     = 36;
-    private static final int REFRESH_COST  = 2;
+    private static final int REFRESH_COST  = 4;
 
     // -----------------------------------------------------------------------
     // State
@@ -70,10 +70,13 @@ public class Shoppanel extends GraphicsPane{
     // -----------------------------------------------------------------------
     // Constructor
     // -----------------------------------------------------------------------
+    private final int startingGold;
+
     public Shoppanel(MainApplication mainScreen, int startingGold) {
         super();
         this.contents = new ArrayList<GObject>();
         this.mainScreen = mainScreen;
+        this.startingGold = startingGold;
         this.gold       = startingGold;
         this.slots      = new ChessPiece[SLOT_COUNT];
         this.slotBgs    = new GRect[SLOT_COUNT];
@@ -88,6 +91,8 @@ public class Shoppanel extends GraphicsPane{
     // -----------------------------------------------------------------------
 
     public void showContent() {
+        gold = startingGold;
+        rollShop();
         drawPanel();
         drawGoldRow();
         drawRefreshButton();
@@ -96,6 +101,9 @@ public class Shoppanel extends GraphicsPane{
     }
 
     public void hideContent() {
+        gold = startingGold;
+        heldPiece = null;
+        heldSlotIndex = -1;
         for (GObject obj : contents) {
             mainScreen.remove(obj);
         }
@@ -343,7 +351,7 @@ public class Shoppanel extends GraphicsPane{
     // Gold management
     // -----------------------------------------------------------------------
     
-    private boolean spendGold(int amount) {
+    public boolean spendGold(int amount) {
         if (amount < 0) return false;
         if (gold < amount) return false;
         gold -= amount;
@@ -480,7 +488,7 @@ public class Shoppanel extends GraphicsPane{
         double x = e.getX(), y = e.getY();
 
         int slotIdx = getSlotAt(x, y);
-        if (slotIdx >= 0 && slots[slotIdx] != null) {
+        if (slotIdx >= 0 && slots[slotIdx] != null && gold >= slots[slotIdx].getCost()) {
             heldPiece = slots[slotIdx];
             heldSlotIndex = slotIdx;
             showDragGhost(heldPiece,x , y);
@@ -508,9 +516,14 @@ public class Shoppanel extends GraphicsPane{
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        if (heldPiece == null) return;
-
         double x = e.getX(), y = e.getY();
+
+        // Handle refresh click when no piece is being dragged
+        if (heldPiece == null) {
+            if (isRefreshButton(x, y)) buyRefresh();
+            return;
+        }
+
         ChessPiece dropping = heldPiece;
         
         boolean placed = handleDrop (dropping, x, y);

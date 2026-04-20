@@ -61,6 +61,11 @@ public class GamePane extends GraphicsPane {
 	private GRect  ffBtn;
 	private GLabel ffBtnLabel;
 	private boolean fastForward = false;
+	private GRect  restartBtn;
+	private GLabel restartBtnLabel;
+	private GRect  healBtn;
+	private GLabel healBtnLabel;
+	private static final int HEAL_COST = 10; // gold per HP healed
 
 	private static final int KING_MAX_HP = 20;
 	private int kingHp = KING_MAX_HP;
@@ -314,7 +319,7 @@ public class GamePane extends GraphicsPane {
 				tierLabels.put(occupant, newTier);
 			}
 			// Show upgrade paths at tier 2 and tier 3, but NOT at the half-star step
-			if (shop != null && !occupant.isHalfStar()) shop.showUpgradePaths(occupant);
+			if (shop != null && !occupant.isHalfStar() && occupant.getTier() < 3) shop.showUpgradePaths(occupant);
 			return true;
 		}
 
@@ -449,6 +454,32 @@ public class GamePane extends GraphicsPane {
 		ffBtnLabel.setColor(Color.WHITE);
 		contents.add(ffBtnLabel);
 		mainScreen.add(ffBtnLabel);
+
+		int rstX = ffX + 70;
+		restartBtn = new GRect(rstX, btnY, 90, 34);
+		restartBtn.setFilled(true);
+		restartBtn.setFillColor(new Color(120, 40, 40));
+		restartBtn.setColor(new Color(220, 80, 80));
+		contents.add(restartBtn);
+		mainScreen.add(restartBtn);
+		restartBtnLabel = new GLabel("\u21BA Restart", rstX + 8, btnY + 22);
+		restartBtnLabel.setFont("DialogInput-BOLD-12");
+		restartBtnLabel.setColor(Color.WHITE);
+		contents.add(restartBtnLabel);
+		mainScreen.add(restartBtnLabel);
+
+		int healX = rstX + 100;
+		healBtn = new GRect(healX, btnY, 100, 34);
+		healBtn.setFilled(true);
+		healBtn.setFillColor(new Color(30, 110, 60));
+		healBtn.setColor(new Color(60, 200, 100));
+		contents.add(healBtn);
+		mainScreen.add(healBtn);
+		healBtnLabel = new GLabel("\u2665 Heal (" + HEAL_COST + "g/hp)", healX + 6, btnY + 22);
+		healBtnLabel.setFont("DialogInput-BOLD-11");
+		healBtnLabel.setColor(Color.WHITE);
+		contents.add(healBtnLabel);
+		mainScreen.add(healBtnLabel);
 	}
 
 	private static final double ENEMY_SPEED    = 2.0;  // pixels per frame
@@ -479,9 +510,44 @@ public class GamePane extends GraphicsPane {
 		Collections.shuffle(all, rng);
 		spawnQueue.addAll(all);
 		currentSpawnInterval = waveNumber == 1 ? 90 : Math.max(20, 90 - (waveNumber - 1) * 10);
+		promoteTier3Pawns();
 		if (waveLabel != null) waveLabel.setLabel("Wave: " + waveNumber);
 		gameTimer = new Timer(16, e -> tick());
 		gameTimer.start();
+	}
+
+	private static final java.awt.Color PAWN_BLUE = new java.awt.Color(0x3B8BD4);
+
+	private void promoteTier3Pawns() {
+		ChessPiece[] replacements = { new Rook(), new Bishop(), new Knight(), new Queen() };
+		for (int row = 0; row < GRID_SIZE; row++) {
+			for (int col = 0; col < GRID_SIZE; col++) {
+				ChessPiece piece = tiles[row][col].getOccupant();
+				if (piece == null) continue;
+				boolean isTier3Pawn = (piece instanceof Pawn && piece.getTier() == 3);
+				if (!isTier3Pawn && !piece.isPawnTransform()) continue;
+				Tile tile = piece.getTile();
+
+				// Remove old visuals
+				GLabel lbl = piece.getLabel();
+				if (lbl != null) { mainScreen.remove(lbl); contents.remove(lbl); }
+				List<GLabel> outlines = outlineLabels.remove(piece);
+				if (outlines != null) for (GLabel o : outlines) { mainScreen.remove(o); contents.remove(o); }
+				GLabel tierLbl = tierLabels.remove(piece);
+				if (tierLbl != null) { mainScreen.remove(tierLbl); contents.remove(tierLbl); }
+				attackCooldowns.remove(piece);
+				animTicks.remove(piece);
+				piece.removeFromTile();
+
+				// Pick a random non-Pawn piece and make it blue + tier 3
+				ChessPiece next = replacements[rng.nextInt(replacements.length)];
+				next.forceTier(3);
+				next.setColorOverride(PAWN_BLUE);
+				next.markPawnTransform();
+				makeTileLabel(next, tile);
+				next.placedOnTile(tile);
+			}
+		}
 	}
 
 private void tick() {
@@ -715,6 +781,49 @@ private void tick() {
 			if (gameTimer != null && gameTimer.isRunning()) {
 				gameTimer.setDelay(fastForward ? 8 : 16);
 			}
+		} else if (clicked == restartBtn || clicked == restartBtnLabel) {
+			restartWave();
+		} else if (clicked == healBtn || clicked == healBtnLabel) {
+			healKing();
 		}
+	}
+
+	private void healKing() {
+		if (kingHp >= KING_MAX_HP) return;
+		int missing = KING_MAX_HP - kingHp;
+		if (shop == null) return;
+		int gold = shop.getGold();
+		int canAfford = gold / HEAL_COST;
+		int healAmount = Math.min(missing, canAfford);
+		if (healAmount <= 0) return;
+		int cost = healAmount * HEAL_COST;
+		shop.spendGold(cost);
+		kingHp = Math.min(KING_MAX_HP, kingHp + healAmount);
+		updateKingHpBar();
+	}
+
+	private void restartWave() {
+		if (waveNumber == 0) return; // no wave started yet
+		if (gameTimer != null) gameTimer.stop();
+		for (UnitBase e : enemies) e.removeFrom(mainScreen);
+		enemies.clear();
+		// Rebuild spawn queue for the current wave
+		spawnQueue.clear();
+		tickCount = 0;
+		fastForward = false;
+		if (ffBtn != null) {
+			ffBtn.setFillColor(new Color(60, 60, 140));
+			ffBtn.setColor(new Color(100, 100, 220));
+			ffBtnLabel.setLabel("\u25BA\u25BA 1x");
+		}
+		int waveIdx = Math.min(waveNumber, WAVE_DATA.length) - 1;
+		int[] counts = WAVE_DATA[waveIdx];
+		List<Integer> all = new ArrayList<>();
+		for (int type = 0; type < counts.length; type++)
+			for (int n = 0; n < counts[type]; n++) all.add(type);
+		Collections.shuffle(all, rng);
+		spawnQueue.addAll(all);
+		gameTimer = new Timer(16, ev -> tick());
+		gameTimer.start();
 	}
 }

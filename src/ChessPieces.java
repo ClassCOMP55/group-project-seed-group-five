@@ -40,7 +40,8 @@ class Rook extends ChessPiece {
 
     @Override
     public boolean canAttack(int fromRow, int fromCol, int toRow, int toCol) {
-        return fromRow == toRow || fromCol == toCol;
+        int dist = Math.max(Math.abs(toRow - fromRow), Math.abs(toCol - fromCol));
+        return (fromRow == toRow || fromCol == toCol) && (getTier() >= 3 || dist <= range);
     }
 
     @Override public Color getPieceColor() { return new Color(0x639922); } // green
@@ -54,7 +55,8 @@ class Bishop extends ChessPiece {
 
     @Override
     public boolean canAttack(int fromRow, int fromCol, int toRow, int toCol) {
-        return Math.abs(toRow - fromRow) == Math.abs(toCol - fromCol);
+        int dr = Math.abs(toRow - fromRow), dc = Math.abs(toCol - fromCol);
+        return dr == dc && (getTier() >= 3 || dr <= range);
     }
 
     @Override public Color getPieceColor() { return new Color(0xBA7517); } // amber
@@ -72,6 +74,12 @@ class Knight extends ChessPiece {
         return (dr == 2 && dc == 1) || (dr == 1 && dc == 2);
     }
 
+    @Override
+    public void promote() {
+        super.promote();
+        if (getTier() == 3) setAttackCooldownOverride(30); // very fast at tier 3
+    }
+
     @Override public Color getPieceColor() { return new Color(0x993556); } // pink
 }
 
@@ -81,12 +89,20 @@ class Queen extends ChessPiece {
 
     @Override
     public boolean canAttack(int fromRow, int fromCol, int toRow, int toCol) {
-        boolean straight  = fromRow == toRow || fromCol == toCol;
-        boolean diagonal  = Math.abs(toRow - fromRow) == Math.abs(toCol - fromCol);
-        return straight || diagonal;
+        int dr = Math.abs(toRow - fromRow), dc = Math.abs(toCol - fromCol);
+        boolean straight = fromRow == toRow || fromCol == toCol;
+        boolean diagonal = dr == dc;
+        return (straight || diagonal) && (getTier() >= 3 || Math.max(dr, dc) <= range);
     }
 
-    @Override public int    getMaxTier()     { return 2; }              // already powerful
+    @Override
+    public void promote() {
+        super.promote();
+        if (getTier() == 3) {
+            setAttackCooldownOverride(25); // very fast at tier 3
+        }
+    }
+
     @Override public Color  getPieceColor()  { return new Color(0x7F77DD); } // purple
 }
 
