@@ -160,6 +160,7 @@ public class UnitBase extends GraphicsPane {
     // ---- Combat ----
 
     public void takeDamage(int amount) {
+    	if (dying || health <= 0) return; // already dead, ignore
         health -= amount;
         if (health < 0) health = 0;
 

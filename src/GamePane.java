@@ -33,6 +33,10 @@ public class GamePane extends GraphicsPane {
 	private final InteractionFeedback feedback = new InteractionFeedback();
 	private Tile previewTile = null;
 	private static final int HOVER_PADDING = 18;
+	//TEST
+	// Wave snapshot for restartWave()
+	private int snapshotGold = 0;
+	private List<Object[]> snapshotPieces = new ArrayList<>(); // {row, col, type}
 	
 			
 	// Floating gold text
@@ -161,6 +165,55 @@ public class GamePane extends GraphicsPane {
 		return null;
 	}
 	
+	//TEST
+	private void snapshotBoard() {
+	    snapshotGold = (shop != null) ? shop.getGold() : 0;
+	    snapshotPieces.clear();
+	    for (int row = 0; row < GRID_SIZE; row++) {
+	        for (int col = 0; col < GRID_SIZE; col++) {
+	            ChessPiece piece = tiles[row][col].getOccupant();
+	            if (piece == null || piece instanceof King) continue;
+	            snapshotPieces.add(new Object[]{
+	                piece,   // the actual piece object
+	                row,
+	                col
+	            });
+	        }
+	    }
+	}
+	
+	//TEST
+	private void restoreBoard() {
+	    // Remove all current pieces (except King)
+	    for (int row = 0; row < GRID_SIZE; row++) {
+	        for (int col = 0; col < GRID_SIZE; col++) {
+	            ChessPiece piece = tiles[row][col].getOccupant();
+	            if (piece == null || piece instanceof King) continue;
+	            // Remove visuals
+	            GLabel label = piece.getLabel();
+	            if (label != null) { mainScreen.remove(label); contents.remove(label); }
+	            List<GLabel> outlines = outlineLabels.remove(piece);
+	            if (outlines != null) for (GLabel o : outlines) { mainScreen.remove(o); contents.remove(o); }
+	            GLabel tierLbl = tierLabels.remove(piece);
+	            if (tierLbl != null) { mainScreen.remove(tierLbl); contents.remove(tierLbl); }
+	            piece.removeFromTile();
+	        }
+	    }
+
+	    // Restore snapshotted pieces
+	    for (Object[] entry : snapshotPieces) {
+	        ChessPiece piece = (ChessPiece) entry[0];
+	        int row = (int) entry[1];
+	        int col = (int) entry[2];
+	        Tile tile = tiles[row][col];
+	        makeTileLabel(piece, tile);
+	        piece.placedOnTile(tile);
+	    }
+
+	    // Restore gold
+	    if (shop != null) shop.setGold(snapshotGold);
+	}
+	
 	private boolean isInsideTileWithPadding(double x, double y, Tile tile, int padding) {
 		if (tile == null) return false;
 		
@@ -211,8 +264,6 @@ public class GamePane extends GraphicsPane {
 		}
 	}
 	
-	
-
 	private void centerLabelOnTile(GLabel label, Tile tile) {
 		double x = tile.getPixelX() + (TILE_SIZE - label.getWidth()) / 2.0 - 2;
 		double y = tile.getPixelY() + (TILE_SIZE + label.getHeight()) / 2.0 - 0.5;
@@ -469,7 +520,7 @@ public class GamePane extends GraphicsPane {
 		mainScreen.add(restartBtnLabel);
 
 		int healX = rstX + 100;
-		healBtn = new GRect(healX, btnY, 100, 34);
+		healBtn = new GRect(healX, btnY, 118, 34);
 		healBtn.setFilled(true);
 		healBtn.setFillColor(new Color(30, 110, 60));
 		healBtn.setColor(new Color(60, 200, 100));
@@ -512,6 +563,8 @@ public class GamePane extends GraphicsPane {
 		currentSpawnInterval = waveNumber == 1 ? 90 : Math.max(20, 90 - (waveNumber - 1) * 10);
 		promoteTier3Pawns();
 		if (waveLabel != null) waveLabel.setLabel("Wave: " + waveNumber);
+		//TEST
+		snapshotBoard();
 		gameTimer = new Timer(16, e -> tick());
 		gameTimer.start();
 	}
@@ -550,7 +603,7 @@ public class GamePane extends GraphicsPane {
 		}
 	}
 
-private void tick() {
+	private void tick() {
 	    tickCount++;
 	    if (!spawnQueue.isEmpty() && tickCount % currentSpawnInterval == 0) {
 	        int type = spawnQueue.poll();
@@ -666,7 +719,23 @@ private void tick() {
 	    }
 	    floatingTexts.removeAll(expiredTexts);
 
-	    if (spawnQueue.isEmpty() && enemies.isEmpty()) gameTimer.stop();
+	    if (spawnQueue.isEmpty() && enemies.isEmpty()) {
+	        gameTimer.stop();
+	        onWaveComplete();
+	    }
+	}
+	
+	private void onWaveComplete() {
+	    // Reset all piece animations to their resting position
+	    for (int row = 0; row < GRID_SIZE; row++) {
+	        for (int col = 0; col < GRID_SIZE; col++) {
+	            ChessPiece piece = tiles[row][col].getOccupant();
+	            if (piece == null) continue;
+	            applyPieceOffset(piece, 0, 0);
+	        }
+	    }
+	    animTicks.clear();
+	    attackTargets.clear();
 	}
 
 	private void spawnFloatingText(String text, double x, double y) {
@@ -807,6 +876,8 @@ private void tick() {
 		if (gameTimer != null) gameTimer.stop();
 		for (UnitBase e : enemies) e.removeFrom(mainScreen);
 		enemies.clear();
+		//TEST
+		restoreBoard();
 		// Rebuild spawn queue for the current wave
 		spawnQueue.clear();
 		tickCount = 0;
