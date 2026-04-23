@@ -33,7 +33,6 @@ public class GamePane extends GraphicsPane {
 	private final InteractionFeedback feedback = new InteractionFeedback();
 	private Tile previewTile = null;
 	private static final int HOVER_PADDING = 18;
-	//TEST
 	// Wave snapshot for restartWave()
 	private int snapshotGold = 0;
 	private List<Object[]> snapshotPieces = new ArrayList<>(); // {row, col, type}
@@ -165,7 +164,6 @@ public class GamePane extends GraphicsPane {
 		return null;
 	}
 	
-	//TEST
 	private void snapshotBoard() {
 	    snapshotGold = (shop != null) ? shop.getGold() : 0;
 	    snapshotPieces.clear();
@@ -182,7 +180,6 @@ public class GamePane extends GraphicsPane {
 	    }
 	}
 	
-	//TEST
 	private void restoreBoard() {
 	    // Remove all current pieces (except King)
 	    for (int row = 0; row < GRID_SIZE; row++) {
@@ -335,7 +332,6 @@ public class GamePane extends GraphicsPane {
 				feedback.showMergeHighlight(mainScreen, tile);
 				previewTile = tile;
 			}
-			else {clearMergePreview();}
 		}
 		
 	}
@@ -563,7 +559,6 @@ public class GamePane extends GraphicsPane {
 		currentSpawnInterval = waveNumber == 1 ? 90 : Math.max(20, 90 - (waveNumber - 1) * 10);
 		promoteTier3Pawns();
 		if (waveLabel != null) waveLabel.setLabel("Wave: " + waveNumber);
-		//TEST
 		snapshotBoard();
 		gameTimer = new Timer(16, e -> tick());
 		gameTimer.start();
@@ -876,7 +871,6 @@ public class GamePane extends GraphicsPane {
 		if (gameTimer != null) gameTimer.stop();
 		for (UnitBase e : enemies) e.removeFrom(mainScreen);
 		enemies.clear();
-		//TEST
 		restoreBoard();
 		// Rebuild spawn queue for the current wave
 		spawnQueue.clear();
