@@ -86,6 +86,7 @@ public class MainApplication extends GraphicsProgram{
 	}
 
 	public void switchToDescriptionFromGame() {
+		gameScreen.pauseGame();
 		descriptionPane.setFromGame(true);
 		previousScreen = currentScreen;   // keep game drawn underneath
 		descriptionPane.showContent();
@@ -99,6 +100,7 @@ public class MainApplication extends GraphicsProgram{
 			// Return to game — it's still on-screen, just restore focus
 			currentScreen = previousScreen;
 			previousScreen = null;
+			gameScreen.resumeGame();
 		} else {
 			// Came from welcome — show welcome fresh (new game state)
 			welcomePane.showContent();

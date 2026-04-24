@@ -54,7 +54,7 @@ class DarkBlueOgre extends UnitBase {
 
 // PinkOgre — fragile, low damage
 class PinkOgre extends UnitBase {
-    public PinkOgre() { super("Pink Ogre", 18, 5, 1); speed = 2.5; goldValue = 2; }
+    public PinkOgre() { super("Pink Ogre", 36, 5, 1); speed = 2.5; goldValue = 2; }
 
     @Override
     protected void createVisual(double px, double py, MainApplication screen) {
@@ -67,7 +67,7 @@ class PinkOgre extends UnitBase {
 
 // PurpleOgre — heavy hitter, slow
 class PurpleOgre extends UnitBase {
-    public PurpleOgre() { super("Purple Ogre", 75, 20, 1); speed = 1.5; goldValue = 15; }
+    public PurpleOgre() { super("Purple Ogre", 150, 20, 1); speed = 1.5; goldValue = 15; }
 
     @Override
     protected void createVisual(double px, double py, MainApplication screen) {
@@ -80,7 +80,7 @@ class PurpleOgre extends UnitBase {
 
 // YellowOgre — very fast, light HP
 class YellowOgre extends UnitBase {
-    public YellowOgre() { super("Yellow Ogre", 23, 8, 1); speed = 4.0; goldValue = 4; }
+    public YellowOgre() { super("Yellow Ogre", 46, 8, 1); speed = 4.0; goldValue = 4; }
 
     @Override
     protected void createVisual(double px, double py, MainApplication screen) {

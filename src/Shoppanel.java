@@ -9,8 +9,8 @@ public class Shoppanel extends GraphicsPane{
     // -----------------------------------------------------------------------
     // Layout constants
     // -----------------------------------------------------------------------
-    private static final int SHOP_X        = 855;   // left edge of shop panel (board ends at 532)
-    private static final int SHOP_Y        = 30;
+    private int SHOP_X        = 855;   // left edge of shop panel; updated by setShopX()
+    private int SHOP_Y        = 30;
     private static final int SHOP_W        = 520;
     private static final int SHOP_H        = 580;
 
@@ -18,15 +18,15 @@ public class Shoppanel extends GraphicsPane{
     private static final int SLOT_W        = 82;
     private static final int SLOT_H        = 90;
     private static final int SLOT_GAP      = 14;
-    private static final int SLOTS_START_Y = SHOP_Y + 80;  // below gold/refresh row
+    private int SLOTS_START_Y = SHOP_Y + 80;  // below gold/refresh row
     // Auto-center slots within the panel
-    private static final int SLOTS_START_X = SHOP_X + (SHOP_W - (SLOT_COUNT * SLOT_W + (SLOT_COUNT - 1) * SLOT_GAP)) / 2;
+    private int SLOTS_START_X = SHOP_X + (SHOP_W - (SLOT_COUNT * SLOT_W + (SLOT_COUNT - 1) * SLOT_GAP)) / 2;
 
-    private static final int GOLD_LABEL_X  = SHOP_X + 10;
-    private static final int GOLD_LABEL_Y  = SHOP_Y + 50;
+    private int GOLD_LABEL_X  = SHOP_X + 10;
+    private int GOLD_LABEL_Y  = SHOP_Y + 50;
 
-    private static final int REFRESH_X     = SHOP_X + 180;
-    private static final int REFRESH_Y     = SHOP_Y + 28;
+    private int REFRESH_X     = SHOP_X + 180;
+    private int REFRESH_Y     = SHOP_Y + 28;
     private static final int REFRESH_W     = 160;
     private static final int REFRESH_H     = 36;
     private static final int REFRESH_COST  = 4;
@@ -65,7 +65,25 @@ public class Shoppanel extends GraphicsPane{
     private GRect[]            upgradeCardBgs       = new GRect[2];
     private ArrayList<GObject> upgradeOverlayItems  = new ArrayList<>();
 
+    // 3-star banner state
+    private boolean            showingStarBanner    = false;
+    private ArrayList<GObject> starBannerItems      = new ArrayList<>();
+
     public void setGamePane(GamePane gp) { gamePane = gp; }
+
+    public void setShopX(int x) {
+        SHOP_X        = x;
+        SLOTS_START_X = SHOP_X + (SHOP_W - (SLOT_COUNT * SLOT_W + (SLOT_COUNT - 1) * SLOT_GAP)) / 2;
+        GOLD_LABEL_X  = SHOP_X + 10;
+        REFRESH_X     = SHOP_X + 180;
+    }
+
+    public void setShopY(int y) {
+        SHOP_Y        = y;
+        SLOTS_START_Y = SHOP_Y + 80;
+        GOLD_LABEL_Y  = SHOP_Y + 50;
+        REFRESH_Y     = SHOP_Y + 28;
+    }
 
     // -----------------------------------------------------------------------
     // Constructor
@@ -294,6 +312,64 @@ public class Shoppanel extends GraphicsPane{
     }
 
     // -----------------------------------------------------------------------
+    // 3-star ability banner
+    // -----------------------------------------------------------------------
+
+    public void show3StarBanner(ChessPiece piece) {
+        hideStarBanner(); // clear any existing one first
+        showingStarBanner = true;
+
+        int overlayY = SLOTS_START_Y + SLOT_H + 55;
+
+        GRect divider = new GRect(SHOP_X + 10, overlayY - 12, SHOP_W - 20, 2);
+        divider.setFilled(true);
+        divider.setFillColor(new Color(0xFFD700));
+        divider.setColor(new Color(0xFFD700));
+        addStarBanner(divider);
+
+        GLabel stars = new GLabel("★★★ " + piece.getName() + " unlocked!", SHOP_X + 10, overlayY + 20);
+        stars.setFont("DialogInput-BOLD-14");
+        stars.setColor(new Color(0xFFD700));
+        addStarBanner(stars);
+
+        GLabel sym = new GLabel(piece.getSymbol(), SHOP_X + SHOP_W - 36, overlayY + 22);
+        sym.setFont("DialogInput-BOLD-22");
+        sym.setColor(piece.getEffectiveColor());
+        addStarBanner(sym);
+
+        GRect card = new GRect(SHOP_X + 10, overlayY + 28, SHOP_W - 20, 70);
+        card.setFilled(true);
+        card.setFillColor(new Color(0x1A1A3A));
+        card.setColor(new Color(0xFFD700));
+        addStarBanner(card);
+
+        GLabel desc = new GLabel(piece.get3StarDescription(), SHOP_X + 18, overlayY + 55);
+        desc.setFont("DialogInput-PLAIN-12");
+        desc.setColor(Color.WHITE);
+        addStarBanner(desc);
+
+        GLabel dismiss = new GLabel("Click anywhere to dismiss", SHOP_X + 18, overlayY + 88);
+        dismiss.setFont("DialogInput-PLAIN-10");
+        dismiss.setColor(Color.GRAY);
+        addStarBanner(dismiss);
+    }
+
+    private void hideStarBanner() {
+        for (GObject obj : starBannerItems) {
+            mainScreen.remove(obj);
+            contents.remove(obj);
+        }
+        starBannerItems.clear();
+        showingStarBanner = false;
+    }
+
+    private void addStarBanner(GObject obj) {
+        starBannerItems.add(obj);
+        contents.add(obj);
+        mainScreen.add(obj);
+    }
+
+    // -----------------------------------------------------------------------
     // Shop logic
     // -----------------------------------------------------------------------
 
@@ -463,6 +539,11 @@ public class Shoppanel extends GraphicsPane{
     @Override
     public void mouseClicked(MouseEvent e) {
         double x = e.getX(), y = e.getY();
+
+        if (showingStarBanner) {
+            hideStarBanner();
+            return;
+        }
 
         if (showingUpgrade) {
             for (int i = 0; i < 2; i++) {

@@ -1,4 +1,4 @@
-import java.awt.Color;
+﻿import java.awt.Color;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -12,8 +12,9 @@ import acm.graphics.*;
 public class GamePane extends GraphicsPane {
 	private static final int GRID_SIZE = 8;
 	private static final int TILE_SIZE = Tile.SIZE;
-	private static final int BOARD_X = 100;
+	private int BOARD_X;
 	private int BOARD_Y;
+	private static final int BOARD_SHOP_GAP = 35;
 
 	private Tile[][] tiles = new Tile[GRID_SIZE][GRID_SIZE];
 	private GRect[][] squares = new GRect[GRID_SIZE][GRID_SIZE];
@@ -26,6 +27,7 @@ public class GamePane extends GraphicsPane {
 	private Shoppanel shop;
 	private final Map<ChessPiece, List<GLabel>> outlineLabels = new HashMap<>();
 	private final Map<ChessPiece, GLabel> tierLabels = new HashMap<>();
+	private final Map<ChessPiece, GLabel> transformIndicators = new HashMap<>();
 
 	private final List<UnitBase> enemies = new ArrayList<>();
 	private Timer gameTimer;
@@ -92,6 +94,7 @@ public class GamePane extends GraphicsPane {
 		if (outlines != null) for (GLabel o : outlines) { mainScreen.remove(o); contents.remove(o); }
 		GLabel tierLbl = tierLabels.remove(piece);
 		if (tierLbl != null) { mainScreen.remove(tierLbl); contents.remove(tierLbl); }
+		removeTransformIndicator(piece);
 		piece.removeFromTile();
 		if (shop != null) shop.awardGold(refund);
 	}
@@ -116,6 +119,25 @@ public class GamePane extends GraphicsPane {
 		return lbl;
 	}
 
+	private void addTransformIndicator(ChessPiece piece, Tile tile) {
+		String sym = piece.getNextTransformSymbol();
+		if (sym == null) return;
+		GLabel ind = new GLabel(sym, 0, 0);
+		ind.setFont("DialogInput-BOLD-14");
+		ind.setColor(new java.awt.Color(0xFFD700));
+		contents.add(ind);
+		mainScreen.add(ind);
+		double x = tile.getPixelX() + TILE_SIZE - ind.getWidth() - 2;
+		double y = tile.getPixelY() + ind.getHeight() + 2;
+		ind.setLocation(x, y);
+		transformIndicators.put(piece, ind);
+	}
+
+	private void removeTransformIndicator(ChessPiece piece) {
+		GLabel ind = transformIndicators.remove(piece);
+		if (ind != null) { mainScreen.remove(ind); contents.remove(ind); }
+	}
+
 	public void showContent() {
 		buildGrid();
 		placeKing();
@@ -125,19 +147,39 @@ public class GamePane extends GraphicsPane {
 		addPlayButton();
 	}
 
+	public void pauseGame() {
+		if (gameTimer != null) gameTimer.stop();
+	}
+
+	public void resumeGame() {
+		if (gameTimer != null && waveNumber > 0) gameTimer.start();
+	}
+
 	public void hideContent() {
 		if (gameTimer != null) gameTimer.stop();
 		for (UnitBase e : enemies) e.removeFrom(mainScreen);
 		enemies.clear();
 		kingHp = KING_MAX_HP;
+		waveNumber = 0;
 		attackCooldowns.clear();
 		animTicks.clear();
+		transformIndicators.clear();
 		for (GObject obj : contents) { mainScreen.remove(obj); }
 		contents.clear();
 	}
 
 	private void buildGrid() {
-		BOARD_Y = ((int) (mainScreen.getHeight() - GRID_SIZE * TILE_SIZE) / 2) - 45;
+		int boardW = GRID_SIZE * TILE_SIZE;
+		int shopW  = 520; // Shoppanel.SHOP_W
+		java.awt.Dimension screen = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
+		int winW = screen.width;
+		int winH = screen.height;
+		BOARD_X = (winW - (boardW + BOARD_SHOP_GAP + shopW)) / 2;
+		BOARD_Y = (winH - GRID_SIZE * TILE_SIZE) / 2 - 45;
+		if (shop != null) {
+			shop.setShopX(BOARD_X + boardW + BOARD_SHOP_GAP);
+			shop.setShopY(BOARD_Y);
+		}
 		for (int row = 0; row < GRID_SIZE; row++) {
 			for (int col = 0; col < GRID_SIZE; col++) {
 				double x = BOARD_X + col * TILE_SIZE;
@@ -193,6 +235,7 @@ public class GamePane extends GraphicsPane {
 	            if (outlines != null) for (GLabel o : outlines) { mainScreen.remove(o); contents.remove(o); }
 	            GLabel tierLbl = tierLabels.remove(piece);
 	            if (tierLbl != null) { mainScreen.remove(tierLbl); contents.remove(tierLbl); }
+	            removeTransformIndicator(piece);
 	            piece.removeFromTile();
 	        }
 	    }
@@ -366,7 +409,10 @@ public class GamePane extends GraphicsPane {
 				tierLabels.put(occupant, newTier);
 			}
 			// Show upgrade paths at tier 2 and tier 3, but NOT at the half-star step
-			if (shop != null && !occupant.isHalfStar() && occupant.getTier() < 3) shop.showUpgradePaths(occupant);
+			if (shop != null && !occupant.isHalfStar()) {
+				if (occupant.getTier() < 3) shop.showUpgradePaths(occupant);
+				else shop.show3StarBanner(occupant);
+			}
 			return true;
 		}
 
@@ -469,34 +515,41 @@ public class GamePane extends GraphicsPane {
 	}
 
 	private void addPlayButton() {
-		int btnX = BOARD_X + (GRID_SIZE * TILE_SIZE) / 2 - 50;
-		int btnY = BOARD_Y + GRID_SIZE * TILE_SIZE + 10;
+		int shopX = BOARD_X + GRID_SIZE * TILE_SIZE + BOARD_SHOP_GAP;
+		int shopH = 580; // Shoppanel.SHOP_H
+		int boardRight = BOARD_X + GRID_SIZE * TILE_SIZE;
+
+		// Wave counter — top right of board, same row as HP bar
+		waveLabel = new GLabel("Wave: 0", boardRight - 90, BOARD_Y - 32 + 14);
+		waveLabel.setFont("DialogInput-BOLD-13");
+		waveLabel.setColor(new Color(0xFFD700));
+		contents.add(waveLabel);
+		mainScreen.add(waveLabel);
+
+		// Send Wave, 1x, Restart — bottom left of shop
+		int btnY = BOARD_Y + shopH - 44;
+		int btnX = shopX + 10;
+
 		playBtn = new GRect(btnX, btnY, 130, 34);
 		playBtn.setFilled(true);
 		playBtn.setFillColor(new Color(30, 120, 50));
 		playBtn.setColor(new Color(50, 200, 80));
 		contents.add(playBtn);
 		mainScreen.add(playBtn);
-		playBtnLabel = new GLabel("\u25BA  SEND WAVE", btnX + 10, btnY + 22);
+		playBtnLabel = new GLabel("►  SEND WAVE", btnX + 10, btnY + 22);
 		playBtnLabel.setFont("DialogInput-BOLD-13");
 		playBtnLabel.setColor(Color.WHITE);
 		contents.add(playBtnLabel);
 		mainScreen.add(playBtnLabel);
 
-		waveLabel = new GLabel("Wave: 0", btnX + 145, btnY + 22);
-		waveLabel.setFont("DialogInput-BOLD-13");
-		waveLabel.setColor(new Color(0xFFD700));
-		contents.add(waveLabel);
-		mainScreen.add(waveLabel);
-
-		int ffX = btnX + 145 + 70;
+		int ffX = btnX + 140;
 		ffBtn = new GRect(ffX, btnY, 60, 34);
 		ffBtn.setFilled(true);
 		ffBtn.setFillColor(new Color(60, 60, 140));
 		ffBtn.setColor(new Color(100, 100, 220));
 		contents.add(ffBtn);
 		mainScreen.add(ffBtn);
-		ffBtnLabel = new GLabel("\u25BA\u25BA 1x", ffX + 8, btnY + 22);
+		ffBtnLabel = new GLabel("►► 1x", ffX + 8, btnY + 22);
 		ffBtnLabel.setFont("DialogInput-BOLD-12");
 		ffBtnLabel.setColor(Color.WHITE);
 		contents.add(ffBtnLabel);
@@ -509,20 +562,22 @@ public class GamePane extends GraphicsPane {
 		restartBtn.setColor(new Color(220, 80, 80));
 		contents.add(restartBtn);
 		mainScreen.add(restartBtn);
-		restartBtnLabel = new GLabel("\u21BA Restart", rstX + 8, btnY + 22);
+		restartBtnLabel = new GLabel("↺ Restart", rstX + 8, btnY + 22);
 		restartBtnLabel.setFont("DialogInput-BOLD-12");
 		restartBtnLabel.setColor(Color.WHITE);
 		contents.add(restartBtnLabel);
 		mainScreen.add(restartBtnLabel);
 
-		int healX = rstX + 100;
-		healBtn = new GRect(healX, btnY, 118, 34);
+		// Heal — right of Refresh button (Refresh is at shopX+180, width 160)
+		int healX = shopX + 180 + 160 + 8;
+		int healY = BOARD_Y + 28;
+		healBtn = new GRect(healX, healY, 118, 36);
 		healBtn.setFilled(true);
 		healBtn.setFillColor(new Color(30, 110, 60));
 		healBtn.setColor(new Color(60, 200, 100));
 		contents.add(healBtn);
 		mainScreen.add(healBtn);
-		healBtnLabel = new GLabel("\u2665 Heal (" + HEAL_COST + "g/hp)", healX + 6, btnY + 22);
+		healBtnLabel = new GLabel("♥ Heal (" + HEAL_COST + "g/hp)", healX + 6, healY + 22);
 		healBtnLabel.setFont("DialogInput-BOLD-11");
 		healBtnLabel.setColor(Color.WHITE);
 		contents.add(healBtnLabel);
@@ -583,6 +638,7 @@ public class GamePane extends GraphicsPane {
 				if (outlines != null) for (GLabel o : outlines) { mainScreen.remove(o); contents.remove(o); }
 				GLabel tierLbl = tierLabels.remove(piece);
 				if (tierLbl != null) { mainScreen.remove(tierLbl); contents.remove(tierLbl); }
+				removeTransformIndicator(piece);
 				attackCooldowns.remove(piece);
 				animTicks.remove(piece);
 				piece.removeFromTile();
@@ -592,8 +648,12 @@ public class GamePane extends GraphicsPane {
 				next.forceTier(3);
 				next.setColorOverride(PAWN_BLUE);
 				next.markPawnTransform();
+				// Pre-roll next wave's transform for the indicator
+				ChessPiece preview = replacements[rng.nextInt(replacements.length)];
+				next.setNextTransformSymbol(preview.getSymbol());
 				makeTileLabel(next, tile);
 				next.placedOnTile(tile);
+				addTransformIndicator(next, tile);
 			}
 		}
 	}
@@ -756,6 +816,14 @@ public class GamePane extends GraphicsPane {
 		);
 	}
 
+	public void bringButtonsToFront() {
+		GObject[] btns = { playBtn, playBtnLabel, ffBtn, ffBtnLabel,
+		                   restartBtn, restartBtnLabel, healBtn, healBtnLabel, waveLabel };
+		for (GObject b : btns) {
+			if (b != null) { mainScreen.remove(b); mainScreen.add(b); }
+		}
+	}
+
 	private void addSettingsIcon() {
 		sIcon = new GImage("Media/settingIcon.png", 25, 783);
 		sIcon.scale(1, 1);
@@ -846,7 +914,7 @@ public class GamePane extends GraphicsPane {
 				gameTimer.setDelay(fastForward ? 8 : 16);
 			}
 		} else if (clicked == restartBtn || clicked == restartBtnLabel) {
-			restartWave();
+			confirmFullReset();
 		} else if (clicked == healBtn || clicked == healBtnLabel) {
 			healKing();
 		}
@@ -864,6 +932,21 @@ public class GamePane extends GraphicsPane {
 		shop.spendGold(cost);
 		kingHp = Math.min(KING_MAX_HP, kingHp + healAmount);
 		updateKingHpBar();
+	}
+
+	private void confirmFullReset() {
+		if (gameTimer != null) gameTimer.stop();
+		int choice = javax.swing.JOptionPane.showConfirmDialog(
+			null,
+			"Reset to Round 1? All pieces and gold will be lost.",
+			"Confirm Reset",
+			javax.swing.JOptionPane.YES_NO_OPTION
+		);
+		if (choice == javax.swing.JOptionPane.YES_OPTION) {
+			mainScreen.switchToGameScreen();
+		} else {
+			if (gameTimer != null && waveNumber > 0) gameTimer.start();
+		}
 	}
 
 	private void restartWave() {

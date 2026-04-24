@@ -5,6 +5,7 @@ import acm.graphics.*;
 // this is what appears when settings is clicked at the beginning
 public class DescriptionPane extends GraphicsPane{
 	private GImage  exit;
+	private GImage  backButton;
 	private GRect   sliderKnob;
 	private GRect   sliderFill;
 	private GLabel  prevTrackBtn;
@@ -48,15 +49,19 @@ public class DescriptionPane extends GraphicsPane{
 	}
 	
 	private void addRectangle() {
+		java.awt.Dimension screen = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
+		// Full-screen dim overlay to block game content behind the window
+		GRect overlay = new GRect(0, 0, screen.width, screen.height);
+		overlay.setFilled(true);
+		overlay.setFillColor(new Color(0, 0, 0, 160));
+		overlay.setColor(new Color(0, 0, 0, 0));
+		contents.add(overlay);
+		mainScreen.add(overlay);
+		// Windowed settings panel
 		GRect box = new GRect(325, 57, 750, 750);
 		box.setFilled(true);
-		
-		// beige fill color
 		box.setFillColor(new Color(242, 235, 226));
-		
-		// border color
 		box.setColor(Color.WHITE);
-		
 		contents.add(box);
 		mainScreen.add(box);
 	}
@@ -97,7 +102,7 @@ public class DescriptionPane extends GraphicsPane{
 	}
 	
 	private void addBackButton() {
-		GImage backButton = new GImage("Media/back.png", 580, 350);
+		backButton = new GImage("Media/back.png", 580, 350);
 		backButton.scale(2, 2);
 		contents.add(backButton);
 		mainScreen.add(backButton);
@@ -187,7 +192,7 @@ public class DescriptionPane extends GraphicsPane{
 	@Override
 	public void mouseClicked(MouseEvent e) {
 		GObject clicked = mainScreen.getElementAtLocation(e.getX(), e.getY());
-		if (clicked == contents.get(1)) {
+		if (clicked == backButton) {
 			mainScreen.switchBackFromDescription();
 		} else if (clicked == exit) {
 			System.out.println("Closing Game... Goodbye!");

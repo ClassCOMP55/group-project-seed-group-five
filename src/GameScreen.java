@@ -8,7 +8,7 @@ public class GameScreen extends GraphicsPane {
 	public GameScreen(MainApplication mainScreen) {
 		this.mainScreen = mainScreen;
 		gamePane = new GamePane(mainScreen);
-		shopPane = new Shoppanel(mainScreen, 60);
+		shopPane = new Shoppanel(mainScreen, 80);
 		shopPane.setGamePane(gamePane);
 		gamePane.setShoppanel(shopPane);
 	}
@@ -17,6 +17,7 @@ public class GameScreen extends GraphicsPane {
 	public void showContent() {
 		gamePane.showContent();
 		shopPane.showContent();
+		gamePane.bringButtonsToFront(); // draw buttons on top of shop background
 	}
 
 	@Override
@@ -24,6 +25,9 @@ public class GameScreen extends GraphicsPane {
 		gamePane.hideContent();
 		shopPane.hideContent();
 	}
+
+	public void pauseGame()  { gamePane.pauseGame();  }
+	public void resumeGame() { gamePane.resumeGame(); }
 
 	@Override public void mousePressed(MouseEvent e) { gamePane.mousePressed(e); shopPane.mousePressed(e); }
 	@Override public void mouseReleased(MouseEvent e) { gamePane.mouseReleased(e); shopPane.mouseReleased(e); }

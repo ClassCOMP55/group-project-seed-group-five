@@ -19,6 +19,7 @@ public abstract class ChessPiece extends GraphicsPane{
     protected int   range                 = 3;    // max tile distance for ranged pieces
     private Color   colorOverride         = null;
     private boolean pawnTransform         = false;
+    private String  nextTransformSymbol   = null;
 
     //Visual
     private GLabel label;      // placeholder renderer; swap for GImage once sprites exist
@@ -91,6 +92,10 @@ public abstract class ChessPiece extends GraphicsPane{
     public Color getEffectiveColor()               { return colorOverride != null ? colorOverride : getPieceColor(); }
     public void markPawnTransform()                { pawnTransform = true; }
     public boolean isPawnTransform()               { return pawnTransform; }
+    public void setNextTransformSymbol(String s)   { nextTransformSymbol = s; }
+    public String getNextTransformSymbol()         { return nextTransformSymbol; }
+
+    public String get3StarDescription() { return "Reaches maximum power!"; }
 
     public String[] getUpgradePathNames() { return new String[]{"Swift", "Ranged"}; }
     public String[] getUpgradePathDescs() { return new String[]{"Faster attack speed", "Range: 3 → 5 tiles"}; }

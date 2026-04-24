@@ -29,6 +29,7 @@ class Pawn extends ChessPiece {
         else           { attackMode = 2; setAttackCooldownOverride(55);  } // Flanker: faster
     }
 
+    @Override public String get3StarDescription() { return "Transforms into a random piece at the start of each wave"; }
     @Override public Color getPieceColor() { return new Color(0x3B8BD4); } // blue
 }
 
@@ -44,6 +45,7 @@ class Rook extends ChessPiece {
         return (fromRow == toRow || fromCol == toCol) && (getTier() >= 3 || dist <= range);
     }
 
+    @Override public String get3StarDescription() { return "Unlimited range along entire rows and columns"; }
     @Override public Color getPieceColor() { return new Color(0x639922); } // green
 }
 
@@ -59,6 +61,7 @@ class Bishop extends ChessPiece {
         return dr == dc && (getTier() >= 3 || dr <= range);
     }
 
+    @Override public String get3StarDescription() { return "Unlimited diagonal range across the entire board"; }
     @Override public Color getPieceColor() { return new Color(0xBA7517); } // amber
 }
 
@@ -80,6 +83,7 @@ class Knight extends ChessPiece {
         if (getTier() == 3) setAttackCooldownOverride(30); // very fast at tier 3
     }
 
+    @Override public String get3StarDescription() { return "Attack speed tripled — strikes nearly every other tick"; }
     @Override public Color getPieceColor() { return new Color(0x993556); } // pink
 }
 
@@ -103,6 +107,7 @@ class Queen extends ChessPiece {
         }
     }
 
+    @Override public String get3StarDescription() { return "Unlimited range, ultra-fast attacks, and massive damage"; }
     @Override public Color  getPieceColor()  { return new Color(0x7F77DD); } // purple
 }
 
