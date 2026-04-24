@@ -8,7 +8,7 @@ public class GameScreen extends GraphicsPane {
 	public GameScreen(MainApplication mainScreen) {
 		this.mainScreen = mainScreen;
 		gamePane = new GamePane(mainScreen);
-		shopPane = new Shoppanel(mainScreen, 80);
+		shopPane = new Shoppanel(mainScreen, 70);
 		shopPane.setGamePane(gamePane);
 		gamePane.setShoppanel(shopPane);
 	}
